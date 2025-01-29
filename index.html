@@ -60,7 +60,7 @@
             border: none;
             color: white;
             cursor: pointer;
-            border-radius: 8px;
+            border-radius: 10px;
             transition: transform 0.5s ease, background-color 0.5s ease;
             margin-top: 20px;
         }
@@ -88,6 +88,7 @@
             height: 30px;
             border: 3px solid white;
             margin-bottom: 10px;
+             border-radius: 5px;
         }
 
         #healthBarInner {
@@ -128,6 +129,7 @@
             opacity: 0;
             transition: opacity 2s ease-in-out;
             user-select: none; /* Prevent text selection */
+            font-family: "Lucida Console", "Courier New", monospace;
         }
     </style>
 </head>
@@ -225,9 +227,11 @@
             ctx.shadowColor = 'rgb(57, 255, 20)';
             ctx.shadowBlur = 50;
             ctx.fillStyle = player.color;
+            var fillRect = true;
             ctx.fillRect(player.x - player.size / 2, player.y - player.size / 2, player.size, player.size);
             ctx.shadowColor = 'rgb(57, 255, 20)';
             ctx.shadowBlur = 50;
+            
             
             
         }
@@ -297,6 +301,8 @@ function updateBullets() {
 
         function drawHealthBoosts() {
             for (let boost of healthBoosts) {
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
                 ctx.fillStyle = boost.color;
                 ctx.beginPath();
                 ctx.arc(boost.x, boost.y, boost.size, 0, Math.PI * 2);
