@@ -301,14 +301,14 @@ function updateBullets() {
 
         function drawHealthBoosts() {
             for (let boost of healthBoosts) {
-                ctx.shadowColor = 'transparent';
-                ctx.shadowBlur = 0;
+                ctx.shadowColor = 'green';
+                ctx.shadowBlur = 5;
                 ctx.fillStyle = boost.color;
                 ctx.beginPath();
                 ctx.arc(boost.x, boost.y, boost.size, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.shadowColor = 'transparent';
-                ctx.shadowBlur = 0;
+                ctx.shadowColor = 'green';
+                ctx.shadowBlur = 5;
             }
         }
 
