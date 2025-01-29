@@ -163,6 +163,7 @@
         let roundNumber = 1;
         let roundMessage = '';
         let roundMessageTime = 0;
+        let gameLoopId;
        
 
         const player = {
@@ -174,19 +175,26 @@
         };
 
         function startGame() {
-            document.getElementById('startMenu').style.display = 'none';
-            document.getElementById('gameUI').style.display = 'block';
-            document.getElementById('gameOverScreen').style.display = 'none';
-            health = 100;
-            score = 0;
-            enemies = [];
-            healthBoosts = [];
-            lastEnemySpawn = 0;
-            roundNumber = 1;
-            roundMessage = '';
-            roundMessageTime = 0;
-            gameLoop();
-        }
+    // Cancel the previous animation frame (if any)
+    if (gameLoopId) {
+        cancelAnimationFrame(gameLoopId);
+    }
+    
+    document.getElementById('startMenu').style.display = 'none';
+    document.getElementById('gameUI').style.display = 'block';
+    document.getElementById('gameOverScreen').style.display = 'none';
+    health = 100;
+    score = 0;
+    enemies = [];
+    healthBoosts = [];
+    lastEnemySpawn = 0;
+    roundNumber = 1;
+    roundMessage = '';
+    roundMessageTime = 0;
+
+    // Start the game loop
+    gameLoop();
+}
 
         function restartGame() {
             startGame();
@@ -421,49 +429,47 @@ function shootAtPlayer(enemy) {
             document.getElementById('finalScore').textContent = `Final Score: ${score}`;
         }
 
-        function gameLoop(timestamp) {
-             
-          
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+       function gameLoop(timestamp) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 3 seconds before enemies spawn
-            if (timestamp - lastEnemySpawn > 7000) { // 7 seconds total for 3 second message before spawn
-                roundMessageTime = timestamp + 3000; // Show message 3 seconds before spawn
-                spawnEnemies();
-                spawnHealthBoost();
-                spawnShooterBullets();
-                lastEnemySpawn = timestamp;
-                roundMessage = `Round ${roundNumber} Beginning! Get Ready!`;
-                roundNumber++;
-            }
+    // 3 seconds before enemies spawn
+    if (timestamp - lastEnemySpawn > 7000) { // 7 seconds total for 3 second message before spawn
+        roundMessageTime = timestamp + 3000; // Show message 3 seconds before spawn
+        spawnEnemies();
+        spawnHealthBoost();
+        spawnShooterBullets();
+        lastEnemySpawn = timestamp;
+        roundMessage = `Round ${roundNumber} Beginning! Get Ready!`;
+        roundNumber++;
+    }
 
-            // Show round message for a short period (3 seconds before and 1 second after)
-            if (timestamp < roundMessageTime && timestamp > roundMessageTime - 3000) {
-                document.getElementById('roundMessage').textContent = roundMessage;
-                document.getElementById('roundMessage').style.opacity = 1; // Fade in
-            } else if (timestamp > roundMessageTime + 1000) {
-                document.getElementById('roundMessage').style.opacity = 0; // Fade out
-                roundMessage = '';
-            }
-            
-            updatePlayer();
-            updateBullets();
-            updateEnemies();
-            checkBulletCollisions();
-            checkHealthBoostCollisions();
-            updateHealthBar();
-            
+    // Show round message for a short period (3 seconds before and 1 second after)
+    if (timestamp < roundMessageTime && timestamp > roundMessageTime - 3000) {
+        document.getElementById('roundMessage').textContent = roundMessage;
+        document.getElementById('roundMessage').style.opacity = 1; // Fade in
+    } else if (timestamp > roundMessageTime + 1000) {
+        document.getElementById('roundMessage').style.opacity = 0; // Fade out
+        roundMessage = '';
+    }
 
-            drawPlayer();
-            drawEnemies();
-            drawBullets();
-            drawHealthBoosts();
-            
+    updatePlayer();
+    updateBullets();
+    updateEnemies();
+    checkBulletCollisions();
+    checkHealthBoostCollisions();
+    updateHealthBar();
 
-            document.getElementById('score').textContent = `Score: ${score}`;
+    drawPlayer();
+    drawEnemies();
+    drawBullets();
+    drawHealthBoosts();
 
-            requestAnimationFrame(gameLoop);
-        }
+    document.getElementById('score').textContent = `Score: ${score}`;
+
+    // Store the animation frame ID for cancellation
+    gameLoopId = requestAnimationFrame(gameLoop);
+}
+
 
         window.addEventListener('keydown', (e) => (keys[e.key] = true));
         window.addEventListener('keyup', (e) => (keys[e.key] = false));
