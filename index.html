@@ -527,6 +527,7 @@ function spawnShooterBullets() {
         
         // Only create bullets for shooter type enemies
         if (enemy.type === 'shooter') {
+          setInterval(() => {
             const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
             const bullet = {
                 x: enemy.x,
@@ -537,7 +538,8 @@ function spawnShooterBullets() {
                 dx: Math.cos(angle) * 3, // Bullet's movement in x direction
                 dy: Math.sin(angle) * 3  // Bullet's movement in y direction
             };
-            enemy.bullets.push(bullet);  // Add bullet to the enemy's bullet array
+            enemy.bullets.push(bullet);
+             }, 1000);
         }
     }
 }
