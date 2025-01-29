@@ -223,23 +223,23 @@
         
         function drawPlayer() {
             ctx.shadowColor = 'rgb(57, 255, 20)';
-            ctx.shadowBlur = 25;
+            ctx.shadowBlur = 50;
             ctx.fillStyle = player.color;
             ctx.fillRect(player.x - player.size / 2, player.y - player.size / 2, player.size, player.size);
             ctx.shadowColor = 'rgb(57, 255, 20)';
-            ctx.shadowBlur = 25;
+            ctx.shadowBlur = 50;
             
             
         }
 
        function drawEnemies() {
     for (let enemy of enemies) {
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'white';
+        ctx.shadowBlur = 5;
         ctx.fillStyle = enemy.color;
         ctx.fillRect(enemy.x - enemy.size / 2, enemy.y - enemy.size / 2, enemy.size, enemy.size);
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'white';
+        ctx.shadowBlur = 5;
         
         // Draw shooter enemy bullets
         if (enemy.type === 'shooter') {
