@@ -259,9 +259,13 @@
 
 function updateBullets() {
     for (let i = player.bullets.length - 1; i >= 0; i--) {
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
         const bullet = player.bullets[i];
         bullet.x += bullet.dx;
         bullet.y += bullet.dy;
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
 
         if (
             bullet.x < 0 || bullet.x > canvas.width ||
@@ -304,10 +308,14 @@ function updateBullets() {
 
         function drawBullets() {
             for (let bullet of player.bullets) {
+                ctx.shadowColor = 'red';
+        ctx.shadowBlur = 8;
                 ctx.fillStyle = 'black';
                 ctx.beginPath();
                 ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2);
                 ctx.fill();
+                ctx.shadowColor = 'red';
+        ctx.shadowBlur = 8;
             }
         }
 
