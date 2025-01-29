@@ -192,25 +192,7 @@
             startGame();
         }
 
-       function spawnEnemies() {
-    for (let i = 0; i < 5; i++) {
-        let type = Math.random() < 0.2 ? 'shooter' : 'melee'; // 20% chance for a shooter enemy
-        let enemy = {
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            size: type === 'melee' ? 40 : 30,
-            color: type === 'shooter' ? 'purple' : 'red', // Shooter will be purple
-            speed: type === 'melee' ? 1 : 2,
-            type: type,
-            dx: 0,
-            dy: 0,
-            bullets: [],
-            shootCooldown: 0 // Time until it can shoot again
-        };
-        enemies.push(enemy);
-    }
-}
-
+       
 
 
         function spawnHealthBoost() {
@@ -498,7 +480,8 @@ function shootAtPlayer(enemy) {
             });
         });
         function spawnEnemies() {
-    for (let i = 0; i < 5; i++) {
+          let numberOfEnemies = 5 + roundNumber - 1; // Start with 5 enemies, and add 1 more for each round
+    for (let i = 0; i < numberOfEnemies; i++) {
         let type = Math.random() < 0.2 ? 'shooter' : 'melee'; // 20% chance for a shooter enemy
         let enemy = {
             x: Math.random() * canvas.width,
