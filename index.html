@@ -165,6 +165,8 @@
         let roundMessage = '';
         let roundMessageTime = 0;
         let gameLoopId;
+        let gameStarted = false;
+        let welcomeMessageTime = 0;
        
 
         const player = {
@@ -190,8 +192,10 @@
     healthBoosts = [];
     lastEnemySpawn = 0;
     roundNumber = 1;
-    roundMessage = '';
-    roundMessageTime = 0;
+    roundMessage = 'Welcome Agent B-429';
+    roundMessageTime = performance.now() + 7000; // Display for 3 seconds
+    gameStarted = true
+    welcomeMessageTime = performance.now() + 3000; // Show "Welcome" for 3 seconds
 
     // Start the game loop
     gameLoop();
@@ -434,6 +438,9 @@ function shootAtPlayer(enemy) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     let roundMessageElement = document.getElementById('roundMessage');
+    
+      
+      
 
       // Check if it's time for a new round
     if (timestamp - lastEnemySpawn > 15000) { // Wait 7 seconds
@@ -458,6 +465,8 @@ function shootAtPlayer(enemy) {
         document.getElementById('roundMessage').style.opacity = 0; // Fade out
         roundMessage = '';
     }
+    
+    
 
     updatePlayer();
     updateBullets();
