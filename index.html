@@ -73,6 +73,8 @@
         button:active {
             transform: scale(1.05);
         }
+        
+        
 
         /* Game UI (Hidden by default) */
         #gameUI {
@@ -117,6 +119,62 @@
             z-index: 100;
             display: none;
         }
+        
+        #colorPickerContainer {
+    margin: 20px 0;
+    text-align: center;
+}
+
+#colorPickerContainer label {
+    color: silver;
+    margin-right: 20px;
+}
+
+#playerColor {
+    width: 30px;
+    height: 30px;
+    border: 4px white;
+    background: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+#colorPreview {
+    width: 40px;
+    height: 40px;
+    border: 3px solid white;
+    margin: 10px auto;
+    border-radius: 5px;
+}
+        
+        #leaderboard {
+        background-color: rgba(255, 255, 255, 0.1);
+       padding: 15px;
+       border-radius: 10px;
+        margin: 20px 0;
+       max-height: 200px;
+        overflow-y: auto;
+    }
+
+      #leaderboard h2 {
+        margin: 0 0 10px 0;
+       color: #ff6b6b;
+      }
+
+      #leaderboardList {
+        list-style: none;
+       padding: 0;
+       margin: 0;
+      }
+
+        #leaderboardList li {
+        color: white;
+       font-size: 18px;
+        padding: 5px 10px;
+        margin: 5px 0;
+        background-color: rgba(0, 0, 0, 0.3);
+        border-radius: 5px;
+    }
 
         #roundMessage {
             position: absolute;
@@ -134,13 +192,24 @@
     </style>
 </head>
 <body>
+  
     <div id="startMenu" style="user-select:none;">
         <h1>Box Fighter</h1>
         <button onclick="startGame()">Ready Up</button>
+        <div id="colorPickerContainer">
+    <label for="playerColor">Change Agent:</label>
+    <input type="color" id="playerColor" value="#39ff14">
+    <div id="colorPreview"></div>
+</div>
     </div>
+    
     <div id="gameOverScreen" style="user-select:none;">
         <h1>Game Over</h1>
         <p id="finalScore">Final Score: 0</p>
+        <div id="leaderboard">
+        <h2>Top Scores</h2>
+        <ol id="leaderboardList"></ol>
+        </div>
         <button onclick="restartGame()">Restart</button>
     </div>
     <div id="gameUI" style="display: none;">
@@ -156,6 +225,11 @@
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+        
+
+
+
+
 
         let keys = {};
         let health = 100;
@@ -179,13 +253,29 @@
             
             bullets: []
         };
+        
+        const colorPicker = document.getElementById('playerColor');
+        const colorPreview = document.getElementById('colorPreview');
+        
+        let leaderboard = JSON.parse(localStorage.getItem('leaderboard') || '[]');
+        
+        colorPreview.style.backgroundColor = colorPicker.value;
+player.color = colorPicker.value;
+
+colorPicker.addEventListener('input', (e) => {
+    player.color = e.target.value;
+    colorPreview.style.backgroundColor = e.target.value;
+});
 
         function startGame() {
     // Cancel the previous animation frame (if any)
     if (gameLoopId) {
         cancelAnimationFrame(gameLoopId);
+        
+         
     }
     
+    colorPreview.style.backgroundColor = player.color;
     document.getElementById('startMenu').style.display = 'none';
     document.getElementById('gameUI').style.display = 'block';
     document.getElementById('gameOverScreen').style.display = 'none';
@@ -200,6 +290,8 @@
     gameStarted = true
     welcomeMessageTime = performance.now() + 4000; // Show "Welcome" for 3 seconds
 
+    displayLeaderboard();
+    
     // Start the game loop
     gameLoop();
 }
@@ -221,15 +313,15 @@
                 });
             }
         }
-
+ctx.shadowColor = player.color;
         
         function drawPlayer() {
-            ctx.shadowColor = 'rgb(57, 255, 20)';
+            ctx.shadowColor = player.color;
             ctx.shadowBlur = 50;
             ctx.fillStyle = player.color;
             var fillRect = true;
             ctx.fillRect(player.x - player.size / 2, player.y - player.size / 2, player.size, player.size);
-            ctx.shadowColor = 'rgb(57, 255, 20)';
+            ctx.shadowColor = player.color;
             ctx.shadowBlur = 50;
             
             
@@ -462,6 +554,7 @@ function shootAtPlayer(enemy) {
         function endGame() {
             document.getElementById('gameOverScreen').style.display = 'flex';
             document.getElementById('finalScore').textContent = `Final Score: ${score}`;
+             updateLeaderboard(score);
         }
 
        function gameLoop(timestamp) {
@@ -574,7 +667,27 @@ function spawnShooterBullets() {
     }
 }
 
+function updateLeaderboard(score) {
+    leaderboard.push(score);
+    leaderboard.sort((a, b) => b - a);
+    leaderboard = leaderboard.slice(0, 5); // Keep top 5 scores
+    localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+    displayLeaderboard();
+}
 
+function displayLeaderboard() {
+    const leaderboardList = document.getElementById('leaderboardList');
+    leaderboardList.innerHTML = '';
+    
+    leaderboard.forEach((score, index) => {
+        const li = document.createElement('li');
+        li.textContent = `${index + 1}. ${score}`;
+        leaderboardList.appendChild(li);
+    });
+}
+
+
+displayLeaderboard();
 
 
 
