@@ -107,7 +107,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: rgba(0, 0, 0, 0.9);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -132,11 +132,11 @@
     </style>
 </head>
 <body>
-    <div id="startMenu">
+    <div id="startMenu" style="user-select:none;">
         <h1>Box Fighter</h1>
-        <button onclick="startGame()">Start Game</button>
+        <button onclick="startGame()">Ready Up</button>
     </div>
-    <div id="gameOverScreen">
+    <div id="gameOverScreen" style="user-select:none;">
         <h1>Game Over</h1>
         <p id="finalScore">Final Score: 0</p>
         <button onclick="restartGame()">Restart</button>
