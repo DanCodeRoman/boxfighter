@@ -192,20 +192,25 @@
             startGame();
         }
 
-        function spawnEnemies() {
-    
-    let type = 'normal'; 
-
-    let enemy = {
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        size: 40,
-        color: type === 'normal' ? 'blue' : 'red',
-        type: type, // Store the enemy type
-    };
-
-    enemies.push(enemy);
+       function spawnEnemies() {
+    for (let i = 0; i < 5; i++) {
+        let type = Math.random() < 0.2 ? 'shooter' : 'melee'; // 20% chance for a shooter enemy
+        let enemy = {
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: type === 'melee' ? 40 : 30,
+            color: type === 'shooter' ? 'purple' : 'red', // Shooter will be purple
+            speed: type === 'melee' ? 1 : 2,
+            type: type,
+            dx: 0,
+            dy: 0,
+            bullets: [],
+            shootCooldown: 0 // Time until it can shoot again
+        };
+        enemies.push(enemy);
+    }
 }
+
 
 
         function spawnHealthBoost() {
@@ -224,18 +229,57 @@
             ctx.fillRect(player.x - player.size / 2, player.y - player.size / 2, player.size, player.size);
         }
 
-        function drawEnemies() {
+       function drawEnemies() {
     for (let enemy of enemies) {
         ctx.fillStyle = enemy.color;
         ctx.fillRect(enemy.x - enemy.size / 2, enemy.y - enemy.size / 2, enemy.size, enemy.size);
         
-        // Special enemy behavior (move slower or differently)
-        if (enemy.type === 'special') {
-            enemy.x += Math.cos(Math.random() * Math.PI * 2) * enemy.speed;
-            enemy.y += Math.sin(Math.random() * Math.PI * 2) * enemy.speed;
+        // Draw shooter enemy bullets
+        if (enemy.type === 'shooter') {
+            for (let bullet of enemy.bullets) {
+                ctx.fillStyle = 'darkblue'; // Bullet color for shooter
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
     }
 }
+
+
+
+function updateBullets() {
+    for (let i = player.bullets.length - 1; i >= 0; i--) {
+        const bullet = player.bullets[i];
+        bullet.x += bullet.dx;
+        bullet.y += bullet.dy;
+
+        if (
+            bullet.x < 0 || bullet.x > canvas.width ||
+            bullet.y < 0 || bullet.y > canvas.height
+        ) {
+            player.bullets.splice(i, 1);
+        }
+    }
+
+    // Update enemy projectiles
+    for (let i = 0; i < enemies.length; i++) {
+        const enemy = enemies[i];
+        if (enemy.type === 'shooter') {
+            for (let j = 0; j < enemy.bullets.length; j++) {
+                const bullet = enemy.bullets[j];
+                bullet.x += bullet.dx;
+                bullet.y += bullet.dy;
+
+                // Remove bullets if they go out of bounds
+                if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
+                    enemy.bullets.splice(j, 1);
+                }
+            }
+        }
+    }
+}
+
 
 
         function drawHealthBoosts() {
@@ -278,47 +322,98 @@
             }
         }
 
-        function updateEnemies() {
-            for (let i = enemies.length - 1; i >= 0; i--) {
-                const enemy = enemies[i];
+       function updateEnemies() {
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        const enemy = enemies[i];
 
-                const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-                enemy.x += Math.cos(angle) * enemy.speed;
-                enemy.y += Math.sin(angle) * enemy.speed;
+        // Move the enemy toward the player (existing logic)
+        const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+        enemy.x += Math.cos(angle) * enemy.speed;
+        enemy.y += Math.sin(angle) * enemy.speed;
 
-                // Check collision with player
-                if (
-                    Math.hypot(player.x - enemy.x, player.y - enemy.y) <
-                    (player.size + enemy.size) / 2
-                ) {
-                    health -= 30;
-                    enemies.splice(i, 1);
-                    if (health <= 0) {
-                        endGame();
-                        return;
-                    }
+        // Update shooter projectiles' positions
+        if (enemy.type === 'shooter') {
+            for (let j = enemy.bullets.length - 1; j >= 0; j--) {
+                const bullet = enemy.bullets[j];
+                bullet.x += bullet.dx;  // Move the bullet in x direction
+                bullet.y += bullet.dy;  // Move the bullet in y direction
+
+                // If the bullet goes off the screen, remove it
+                if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
+                    enemy.bullets.splice(j, 1); // Remove bullet from enemy's bullet array
                 }
             }
         }
+
+        // Check collision with player
+        if (
+            Math.hypot(player.x - enemy.x, player.y - enemy.y) <
+            (player.size + enemy.size) / 2
+        ) {
+            health -= 30;
+            enemies.splice(i, 1);
+            if (health <= 0) {
+                endGame();
+                return;
+            }
+        }
+    }
+}
+
+
+
+function shootAtPlayer(enemy) {
+    const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+    const bullet = {
+        x: enemy.x,
+        y: enemy.y,
+        dx: Math.cos(angle) * 5, // Speed of the bullet
+        dy: Math.sin(angle) * 5,
+        size: 5,
+        color: 'purple' // Shooter bullets are purple
+    };
+    enemy.bullets.push(bullet);
+}
+
+
 
         function checkBulletCollisions() {
-            for (let i = player.bullets.length - 1; i >= 0; i--) {
-                const bullet = player.bullets[i];
-                for (let j = enemies.length - 1; j >= 0; j--) {
-                    const enemy = enemies[j];
-                    if (
-                        Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y) <
-                        20
-                    ) {
-                        score += 15;
-                        health = Math.min(100, health + 10);
-                        player.bullets.splice(i, 1);
-                        enemies.splice(j, 1);
-                        break;
+    // Check if player bullets hit enemies
+    for (let i = player.bullets.length - 1; i >= 0; i--) {
+        const bullet = player.bullets[i];
+        for (let j = enemies.length - 1; j >= 0; j--) {
+            const enemy = enemies[j];
+            if (
+                Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y) < 20
+            ) {
+                score += 15;
+                health = Math.min(100, health + 10);
+                player.bullets.splice(i, 1);  // Remove the bullet
+                enemies.splice(j, 1);         // Remove the enemy
+                break;
+            }
+        }
+    }
+
+    // Check if player is hit by shooter projectiles
+    for (let i = 0; i < enemies.length; i++) {
+        const enemy = enemies[i];
+        if (enemy.type === 'shooter') {
+            for (let j = enemy.bullets.length - 1; j >= 0; j--) {  // Loop backwards to remove bullets safely
+                const bullet = enemy.bullets[j];
+                if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < (player.size / 2 + bullet.size)) {
+                    health -= health * 0.20; // Deal 20% of the player's current health as damage
+                    enemy.bullets.splice(j, 1); // Remove the bullet
+                    if (health <= 0) {
+                        endGame();  // End the game if health reaches 0
                     }
+                    break;
                 }
             }
         }
+    }
+}
+
 
         function checkHealthBoostCollisions() {
             for (let i = healthBoosts.length - 1; i >= 0; i--) {
@@ -354,6 +449,7 @@
                 roundMessageTime = timestamp + 3000; // Show message 3 seconds before spawn
                 spawnEnemies();
                 spawnHealthBoost();
+                spawnShooterBullets();
                 lastEnemySpawn = timestamp;
                 roundMessage = `Round ${roundNumber} Beginning! Get Ready!`;
                 roundNumber++;
@@ -403,19 +499,41 @@
         });
         function spawnEnemies() {
     for (let i = 0; i < 5; i++) {
-        let type = Math.random() < 0.1 ? 'melee' : 'melee'; // 20% chance for a shooter enemy
+        let type = Math.random() < 0.2 ? 'shooter' : 'melee'; // 20% chance for a shooter enemy
         let enemy = {
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
-            size: type === 'melee' ? 40 : 30,
-            color: 'red',
-            speed: type === 'melee' ? 1 : 2,
+            size: type === 'shooter' ? 40 : 30, // Shooter enemy size
+            color: type === 'shooter' ? 'darkblue' : 'red', // Shooter is dark blue
+            speed: type === 'shooter' ? 1.5 : 2, // Adjust shooter speed if needed
             type: type,
             dx: 0,
-            dy: 0
+            dy: 0,
+            bullets: [],
+            shootCooldown: 0 // Time until it can shoot again
         };
-        
         enemies.push(enemy);
+    }
+}
+
+function spawnShooterBullets() {
+    for (let i = 0; i < enemies.length; i++) {
+        const enemy = enemies[i];
+        
+        // Only create bullets for shooter type enemies
+        if (enemy.type === 'shooter') {
+            const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+            const bullet = {
+                x: enemy.x,
+                y: enemy.y,
+                size: 5,
+                color: 'darkblue',
+                speed: 3,  // Adjust speed as needed
+                dx: Math.cos(angle) * 3, // Bullet's movement in x direction
+                dy: Math.sin(angle) * 3  // Bullet's movement in y direction
+            };
+            enemy.bullets.push(bullet);  // Add bullet to the enemy's bullet array
+        }
     }
 }
 
