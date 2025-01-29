@@ -436,11 +436,11 @@ function shootAtPlayer(enemy) {
     let roundMessageElement = document.getElementById('roundMessage');
 
       // Check if it's time for a new round
-    if (timestamp - lastEnemySpawn > 9000) { // Wait 7 seconds
+    if (timestamp - lastEnemySpawn > 15000) { // Wait 7 seconds
         lastEnemySpawn = timestamp; // Reset enemy spawn timer
         roundMessageTime = timestamp + 3000; // Show round message 3 sec before spawning
         
-        roundMessage = `Round ${roundNumber} Beginning! Get Ready!`;
+        roundMessage = `Wave ${roundNumber}`;
         roundNumber++;
 
         setTimeout(() => {
