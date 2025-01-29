@@ -220,7 +220,10 @@
             }
         }
 
+        
         function drawPlayer() {
+            ctx.shadowColor = 'rgb(57, 255, 20)';
+            ctx.shadowBlur = 25;
             ctx.fillStyle = player.color;
             ctx.fillRect(player.x - player.size / 2, player.y - player.size / 2, player.size, player.size);
             ctx.shadowColor = 'rgb(57, 255, 20)';
