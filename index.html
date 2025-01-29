@@ -119,14 +119,15 @@
 
         #roundMessage {
             position: absolute;
-            top: 50%;
+            top: 20%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 30px;
-            color: white;
+            font-size: 20px;
+            color: black;
             z-index: 50;
             opacity: 0;
-            transition: opacity 1s ease-in-out;
+            transition: opacity 2s ease-in-out;
+            user-select: none; /* Prevent text selection */
         }
     </style>
 </head>
@@ -431,23 +432,29 @@ function shootAtPlayer(enemy) {
 
        function gameLoop(timestamp) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    let roundMessageElement = document.getElementById('roundMessage');
 
-    // 3 seconds before enemies spawn
-    if (timestamp - lastEnemySpawn > 7000) { // 7 seconds total for 3 second message before spawn
-        roundMessageTime = timestamp + 3000; // Show message 3 seconds before spawn
-        spawnEnemies();
-        spawnHealthBoost();
-        spawnShooterBullets();
-        lastEnemySpawn = timestamp;
+      // Check if it's time for a new round
+    if (timestamp - lastEnemySpawn > 9000) { // Wait 7 seconds
+        lastEnemySpawn = timestamp; // Reset enemy spawn timer
+        roundMessageTime = timestamp + 3000; // Show round message 3 sec before spawning
+        
         roundMessage = `Round ${roundNumber} Beginning! Get Ready!`;
         roundNumber++;
+
+        setTimeout(() => {
+            spawnEnemies();   // Spawn enemies after 3 seconds
+            spawnHealthBoost();
+            spawnShooterBullets();
+        }, 4000);
     }
 
     // Show round message for a short period (3 seconds before and 1 second after)
     if (timestamp < roundMessageTime && timestamp > roundMessageTime - 3000) {
         document.getElementById('roundMessage').textContent = roundMessage;
         document.getElementById('roundMessage').style.opacity = 1; // Fade in
-    } else if (timestamp > roundMessageTime + 1000) {
+    } else if (timestamp > roundMessageTime + 100) {
         document.getElementById('roundMessage').style.opacity = 0; // Fade out
         roundMessage = '';
     }
