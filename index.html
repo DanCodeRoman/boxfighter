@@ -98,7 +98,7 @@
 
         canvas {
             display: block;
-            background-color: purple;
+            background-color: #2b5280;
         }
 
         #gameOverScreen {
@@ -173,7 +173,8 @@
             x: canvas.width / 2,
             y: canvas.height / 2,
             size: 40,
-            color: 'green',
+            color: 'rgb(57, 255, 20)',
+            
             bullets: []
         };
 
@@ -222,12 +223,20 @@
         function drawPlayer() {
             ctx.fillStyle = player.color;
             ctx.fillRect(player.x - player.size / 2, player.y - player.size / 2, player.size, player.size);
+            ctx.shadowColor = 'rgb(57, 255, 20)';
+            ctx.shadowBlur = 25;
+            
+            
         }
 
        function drawEnemies() {
     for (let enemy of enemies) {
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
         ctx.fillStyle = enemy.color;
         ctx.fillRect(enemy.x - enemy.size / 2, enemy.y - enemy.size / 2, enemy.size, enemy.size);
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
         
         // Draw shooter enemy bullets
         if (enemy.type === 'shooter') {
@@ -236,6 +245,8 @@
                 ctx.beginPath();
                 ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
                 ctx.fill();
+                ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
             }
         }
     }
@@ -283,6 +294,8 @@ function updateBullets() {
                 ctx.beginPath();
                 ctx.arc(boost.x, boost.y, boost.size, 0, Math.PI * 2);
                 ctx.fill();
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
             }
         }
 
