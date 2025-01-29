@@ -56,18 +56,18 @@
         button {
             font-size: 24px;
             padding: 15px 30px;
-            background-color: #444;
+            background-color: #344;
             border: none;
             color: white;
             cursor: pointer;
             border-radius: 8px;
-            transition: transform 0.3s ease, background-color 0.3s ease;
+            transition: transform 0.5s ease, background-color 0.5s ease;
             margin-top: 20px;
         }
 
         button:hover {
             background-color: #ff6b6b;
-            transform: scale(1.1);
+            transform: scale(1.2);
         }
 
         button:active {
@@ -192,10 +192,10 @@
     healthBoosts = [];
     lastEnemySpawn = 0;
     roundNumber = 1;
-    roundMessage = 'Welcome Agent B-429';
-    roundMessageTime = performance.now() + 7000; // Display for 3 seconds
+    roundMessage = 'Welcome Agent B-XFTR';
+    roundMessageTime = performance.now() + 4000; // Display for 3 seconds
     gameStarted = true
-    welcomeMessageTime = performance.now() + 3000; // Show "Welcome" for 3 seconds
+    welcomeMessageTime = performance.now() + 4000; // Show "Welcome" for 3 seconds
 
     // Start the game loop
     gameLoop();
@@ -209,11 +209,11 @@
 
 
         function spawnHealthBoost() {
-            if (Math.random() < 0.2) {
+            if (Math.random() < 0.25) {
                 healthBoosts.push({
                     x: Math.random() * canvas.width,
                     y: Math.random() * canvas.height,
-                    size: 15,
+                    size: 13,
                     color: 'pink'
                 });
             }
@@ -382,7 +382,7 @@ function shootAtPlayer(enemy) {
                 Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y) < 20
             ) {
                 score += 15;
-                health = Math.min(100, health + 10);
+                health = Math.min(100, health + 5);
                 player.bullets.splice(i, 1);  // Remove the bullet
                 enemies.splice(j, 1);         // Remove the enemy
                 break;
@@ -397,7 +397,7 @@ function shootAtPlayer(enemy) {
             for (let j = enemy.bullets.length - 1; j >= 0; j--) {  // Loop backwards to remove bullets safely
                 const bullet = enemy.bullets[j];
                 if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < (player.size / 2 + bullet.size)) {
-                    health -= health * 0.20; // Deal 20% of the player's current health as damage
+                    health -= health * 0.25; // Deal 20% of the player's current health as damage
                     enemy.bullets.splice(j, 1); // Remove the bullet
                     if (health <= 0) {
                         endGame();  // End the game if health reaches 0
@@ -443,9 +443,9 @@ function shootAtPlayer(enemy) {
       
 
       // Check if it's time for a new round
-    if (timestamp - lastEnemySpawn > 15000) { // Wait 7 seconds
+    if (timestamp - lastEnemySpawn > 14000) { // Wait 7 seconds
         lastEnemySpawn = timestamp; // Reset enemy spawn timer
-        roundMessageTime = timestamp + 3000; // Show round message 3 sec before spawning
+        roundMessageTime = timestamp + 2000; // Show round message 3 sec before spawning
         
         roundMessage = `Wave ${roundNumber}`;
         roundNumber++;
@@ -497,12 +497,12 @@ function shootAtPlayer(enemy) {
             player.bullets.push({
                 x: player.x,
                 y: player.y,
-                dx: Math.cos(angle) * 10,
-                dy: Math.sin(angle) * 10
+                dx: Math.cos(angle) * 6.5,
+                dy: Math.sin(angle) * 6.5
             });
         });
         function spawnEnemies() {
-          let numberOfEnemies = 5 + roundNumber - 1; // Start with 5 enemies, and add 1 more for each round
+          let numberOfEnemies = 6 + roundNumber - 1; // Start with 5 enemies, and add 1 more for each round
     for (let i = 0; i < numberOfEnemies; i++) {
         let type = Math.random() < 0.2 ? 'shooter' : 'melee'; // 20% chance for a shooter enemy
         let enemy = {
@@ -510,7 +510,7 @@ function shootAtPlayer(enemy) {
             y: Math.random() * canvas.height,
             size: type === 'shooter' ? 40 : 30, // Shooter enemy size
             color: type === 'shooter' ? 'darkblue' : 'red', // Shooter is dark blue
-            speed: type === 'shooter' ? 1.5 : 2, // Adjust shooter speed if needed
+            speed: type === 'shooter' ? 1.75 : 2.35, // Adjust shooter speed if needed
             type: type,
             dx: 0,
             dy: 0,
@@ -534,12 +534,12 @@ function spawnShooterBullets() {
                 y: enemy.y,
                 size: 5,
                 color: 'darkblue',
-                speed: 3,  // Adjust speed as needed
-                dx: Math.cos(angle) * 3, // Bullet's movement in x direction
-                dy: Math.sin(angle) * 3  // Bullet's movement in y direction
+                speed: 5,  // Adjust speed as needed
+                dx: Math.cos(angle) * 5, // Bullet's movement in x direction
+                dy: Math.sin(angle) * 5  // Bullet's movement in y direction
             };
             enemy.bullets.push(bullet);
-             }, 1000);
+             }, 800);
         }
     }
 }
