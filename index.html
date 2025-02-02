@@ -217,9 +217,9 @@
     /* Mobile Controls - Only visible on smaller screens */
     #mobileControls {
       position: fixed;
-      bottom: 20px;
-      left: 20px;
-      z-index: 200;
+      bottom: 0px;
+      left: 0px;
+      z-index: 0;
       display: none;
       /* Allow multi-touch on the control container */
       touch-action: none;
@@ -231,19 +231,20 @@
         ". up ."
         "left . right"
         ". down .";
-      grid-gap: 10px;
-      width: 120px;
-      height: 300px;
+      grid-gap: 0px;
+      width: 40px;
+      height: 180px;
     }
 
     #mobileControls button {
-      width: 40px;
+      width: 70px;
       height: 40px;
-      font-size: 20px;
-      background-color: rgba(0, 0, 0, 0.5);
+      font-size: 10px;
+      background-color: rgba(0, 0, 0, 0.2);
       color: white;
-      border: none;
-      border-radius: 5px;
+      border-style: solid;
+      border-radius:15px;
+      user-select: none;
     }
 
     #mobileControls .up {
@@ -263,7 +264,7 @@
     }
 
     /* Show mobile controls only on devices with narrow screens */
-    @media (max-width: 768px) {
+    @media (max-width: 1000px) {
       #mobileControls {
         display: block;
       }
