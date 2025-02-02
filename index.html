@@ -871,8 +871,8 @@
   const centerX = rect.left + rect.width / 2;
   const centerY = rect.top + rect.height / 2;
       
-      const dx = clientX - center.x;
-      const dy = clientY - center.y;
+      const dx = clientX - joystickCenter.x;
+      const dy = clientY - joystickCenter.y;
       const distance = Math.hypot(dx, dy);
       const angle = Math.atan2(dy, dx);
 
