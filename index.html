@@ -123,6 +123,7 @@
     canvas {
       display: block;
       background-color: #2b5280;
+      touch-action: none;
     }
 
     #gameOverScreen {
@@ -215,8 +216,8 @@
     /* Mobile Controls - Only visible on smaller screens */
     #mobileControls {
       position: fixed;
-      bottom: 40px;
-      left: 40px;
+      bottom: 20px;
+      left: 20px;
       z-index: 200;
       display: none;
     }
@@ -227,18 +228,18 @@
         ". up ."
         "left . right"
         ". down .";
-      grid-gap: 1px;
-      width: 70px;
-      height: 250px;
+      grid-gap: 10px;
+      width: 120px;
+      height: 300px;
     }
 
     #mobileControls button {
       width: 70px;
-      height: 60px;
+      height: 70px;
       font-size: 20px;
       background-color: rgba(0, 0, 0, 0.5);
-      color: silver;
-      border: white 5px;
+      color: white;
+      border: none;
       border-radius: 5px;
     }
 
@@ -763,9 +764,23 @@
     window.addEventListener("keydown", (e) => (keys[e.key] = true));
     window.addEventListener("keyup", (e) => (keys[e.key] = false));
     
-    // Player shoots where tapped/clicked
+    // Allow shooting with a mouse click
     canvas.addEventListener("click", (e) => {
       const angle = Math.atan2(e.clientY - player.y, e.clientX - player.x);
+      player.bullets.push({
+        x: player.x,
+        y: player.y,
+        dx: Math.cos(angle) * 6.5,
+        dy: Math.sin(angle) * 6.5
+      });
+    });
+
+    // Allow shooting via touch so that you can shoot while using the D-pad to move.
+    canvas.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      // Use the first changed touch for shooting
+      const touch = e.changedTouches[0];
+      const angle = Math.atan2(touch.clientY - player.y, touch.clientX - player.x);
       player.bullets.push({
         x: player.x,
         y: player.y,
