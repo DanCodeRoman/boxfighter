@@ -214,58 +214,39 @@
       font-family: "Lucida Console", "Courier New", monospace;
     }
 
-    /* Mobile Controls - Only visible on smaller screens */
-    #mobileControls {
+    /* Virtual Joystick Styling - Only visible on mobile/narrow screens */
+    #joystickContainer {
       position: fixed;
-      bottom: 0px;
-      left: 0px;
-      z-index: 0;
+      bottom: 20px;
+      left: 20px;
+      width: 120px;
+      height: 120px;
+      z-index: 200;
       display: none;
-      /* Allow multi-touch on the control container */
+      touch-action: none;
+    }
+    #joystickBase {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 50%;
+    }
+    #joystickKnob {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 50px;
+      height: 50px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
       touch-action: none;
     }
 
-    #mobileControls .dpad {
-      display: grid;
-      grid-template-areas:
-        ". up ."
-        "left . right"
-        ". down .";
-      grid-gap: 0px;
-      width: 40px;
-      height: 180px;
-    }
-
-    #mobileControls button {
-      width: 70px;
-      height: 40px;
-      font-size: 10px;
-      background-color: rgba(0, 0, 0, 0.2);
-      color: white;
-      border-style: solid;
-      border-radius:15px;
-      user-select: none;
-    }
-
-    #mobileControls .up {
-      grid-area: up;
-    }
-
-    #mobileControls .down {
-      grid-area: down;
-    }
-
-    #mobileControls .left {
-      grid-area: left;
-    }
-
-    #mobileControls .right {
-      grid-area: right;
-    }
-
-    /* Show mobile controls only on devices with narrow screens */
+    /* Show joystick on devices with narrow screens */
     @media (max-width: 1000px) {
-      #mobileControls {
+      #joystickContainer {
         display: block;
       }
     }
@@ -304,13 +285,10 @@
   <canvas id="gameCanvas"></canvas>
   <div id="roundMessage"></div>
   
-  <!-- Mobile Controls (D-pad for movement) -->
-  <div id="mobileControls">
-    <div class="dpad">
-      <button class="up" id="btn-up">↑</button>
-      <button class="left" id="btn-left">←</button>
-      <button class="right" id="btn-right">→</button>
-      <button class="down" id="btn-down">↓</button>
+  <!-- Virtual Joystick (for mobile movement) -->
+  <div id="joystickContainer">
+    <div id="joystickBase">
+      <div id="joystickKnob"></div>
     </div>
   </div>
 
@@ -332,8 +310,6 @@
     let gameLoopId;
     let gameStarted = false;
     let welcomeMessageTime = 0;
-
-    // The boss (if any) will be stored here.
     let boss = null;
 
     const player = {
@@ -344,9 +320,11 @@
       bullets: []
     };
 
+    // Joystick direction vector (values between -1 and 1)
+    let joystickDirection = { x: 0, y: 0 };
+
     const colorPicker = document.getElementById("playerColor");
     const colorPreview = document.getElementById("colorPreview");
-
     let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
 
     colorPreview.style.backgroundColor = colorPicker.value;
@@ -358,11 +336,9 @@
     });
 
     function startGame() {
-      // Cancel the previous animation frame (if any)
       if (gameLoopId) {
         cancelAnimationFrame(gameLoopId);
       }
-      // Reset UI and game variables
       colorPreview.style.backgroundColor = player.color;
       document.getElementById("startMenu").style.display = "none";
       document.getElementById("gameUI").style.display = "block";
@@ -374,12 +350,11 @@
       healthBoosts = [];
       lastEnemySpawn = performance.now();
       roundNumber = 1;
-      // Set the initial welcome message and display it for 4 seconds
       roundMessage = "Welcome Agent B-XFTR";
       roundMessageTime = performance.now() + 4000;
       gameStarted = true;
       welcomeMessageTime = performance.now() + 4000;
-      boss = null; // Clear any boss reference
+      boss = null;
       displayLeaderboard();
       gameLoop();
     }
@@ -417,12 +392,7 @@
 
     function drawEnemies() {
       for (let enemy of enemies) {
-        // For the tank enemy, use yellow shadow; for the boss, use white.
-        if (enemy.type === "boss") {
-          ctx.shadowColor = "white";
-        } else {
-          ctx.shadowColor = enemy.type === "tank" ? "yellow" : "white";
-        }
+        ctx.shadowColor = enemy.type === "boss" ? "white" : (enemy.type === "tank" ? "yellow" : "white");
         ctx.shadowBlur = 5;
         ctx.fillStyle = enemy.color;
         ctx.fillRect(
@@ -431,9 +401,7 @@
           enemy.size,
           enemy.size
         );
-        ctx.shadowColor = enemy.type === "tank" ? "yellow" : "white";
         ctx.shadowBlur = 5;
-        // Draw bullets for shooter and boss enemies
         if (enemy.type === "shooter" || enemy.type === "boss") {
           for (let bullet of enemy.bullets) {
             ctx.fillStyle = enemy.type === "boss" ? "purple" : "darkblue";
@@ -448,7 +416,6 @@
     }
 
     function updateBullets() {
-      // Update player bullets
       for (let i = player.bullets.length - 1; i >= 0; i--) {
         const bullet = player.bullets[i];
         bullet.x += bullet.dx;
@@ -462,7 +429,6 @@
           player.bullets.splice(i, 1);
         }
       }
-      // Update enemy (or boss) projectiles
       for (let i = 0; i < enemies.length; i++) {
         const enemy = enemies[i];
         if (enemy.type === "shooter" || enemy.type === "boss") {
@@ -509,21 +475,26 @@
       }
     }
 
+    // Update player based on keyboard (if any) and joystick input.
     function updatePlayer() {
       if (keys["w"] && player.y - player.size / 2 > 0) player.y -= 5;
       if (keys["s"] && player.y + player.size / 2 < canvas.height) player.y += 5;
       if (keys["a"] && player.x - player.size / 2 > 0) player.x -= 5;
       if (keys["d"] && player.x + player.size / 2 < canvas.width) player.x += 5;
+      // Apply joystick movement
+      player.x += joystickDirection.x * 5;
+      player.y += joystickDirection.y * 5;
+      // Constrain player to canvas boundaries
+      player.x = Math.max(player.size / 2, Math.min(canvas.width - player.size / 2, player.x));
+      player.y = Math.max(player.size / 2, Math.min(canvas.height - player.size / 2, player.y));
     }
 
     function updateEnemies() {
       for (let i = enemies.length - 1; i >= 0; i--) {
         const enemy = enemies[i];
-        // Move enemy (or boss) toward the player
         const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
         enemy.x += Math.cos(angle) * enemy.speed;
         enemy.y += Math.sin(angle) * enemy.speed;
-        // Update bullets for shooter or boss enemies
         if (enemy.type === "shooter" || enemy.type === "boss") {
           for (let j = enemy.bullets.length - 1; j >= 0; j--) {
             const bullet = enemy.bullets[j];
@@ -539,13 +510,11 @@
             }
           }
         }
-        // Check collision with player
         if (
           Math.hypot(player.x - enemy.x, player.y - enemy.y) <
           (player.size + enemy.size) / 2
         ) {
           if (enemy.type === "boss") {
-            // Boss colliding with the player causes instant death
             health = 0;
           }
           health -= 30;
@@ -572,7 +541,6 @@
     }
 
     function checkBulletCollisions() {
-      // Loop through player bullets
       for (let i = player.bullets.length - 1; i >= 0; i--) {
         const bullet = player.bullets[i];
         for (let j = enemies.length - 1; j >= 0; j--) {
@@ -590,7 +558,6 @@
             } else if (enemy.type === "boss") {
               enemy.hitsRemaining--;
               player.bullets.splice(i, 1);
-              // Update the boss health bar width based on the remaining hits (out of 85)
               const bossBar = document.getElementById("bossHealthBarInner");
               bossBar.style.width = (enemy.hitsRemaining / 85) * 100 + "%";
               if (enemy.hitsRemaining <= 0) {
@@ -612,7 +579,6 @@
           }
         }
       }
-      // Check if player is hit by shooter or boss bullets
       for (let i = 0; i < enemies.length; i++) {
         const enemy = enemies[i];
         if (enemy.type === "shooter" || enemy.type === "boss") {
@@ -663,16 +629,13 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const roundMessageElement = document.getElementById("roundMessage");
 
-      // Trigger a new round (or boss round) every 15 seconds
       if (timestamp - lastEnemySpawn > 15000) {
         lastEnemySpawn = timestamp;
-        // Boss round: every 5th round
         if (roundNumber % 5 === 0) {
           roundMessage = "Boss Incoming";
           roundMessageTime = timestamp + 5000;
           setTimeout(() => {
             if (!boss) {
-              // Clear any remaining enemies and spawn the boss
               enemies = [];
               boss = {
                 x: canvas.width / 2,
@@ -689,7 +652,6 @@
               bossBar.style.width = "100%";
               document.getElementById("bossHealthBarContainer").style.display = "block";
 
-              // Continuous shooting every second
               boss.continuousShootInterval = setInterval(() => {
                 const angle = Math.atan2(player.y - boss.y, player.x - boss.x);
                 const bullet = {
@@ -703,7 +665,6 @@
                 boss.bullets.push(bullet);
               }, 1000);
 
-              // Every 5 seconds, shoot a circle of slow bullets
               boss.circleShootInterval = setInterval(() => {
                 const numBullets = 12;
                 for (let i = 0; i < numBullets; i++) {
@@ -722,7 +683,6 @@
             }
           }, 5000);
         } else {
-          // Normal round: display wave number then spawn enemies after 5 seconds.
           roundMessage = "Wave " + roundNumber;
           roundMessageTime = timestamp + 5000;
           setTimeout(() => {
@@ -734,13 +694,10 @@
         roundNumber++;
       }
 
-      // Display round message for its duration (5 seconds)
       if (performance.now() < welcomeMessageTime) {
-        // During the welcome period, always display the welcome message.
         roundMessageElement.textContent = "Welcome Agent B-XFTR";
         roundMessageElement.style.opacity = 1;
       } else if (timestamp < roundMessageTime) {
-        // After the welcome period, display the round message.
         roundMessageElement.textContent = roundMessage;
         roundMessageElement.style.opacity = 1;
       } else {
@@ -768,7 +725,7 @@
     window.addEventListener("keydown", (e) => (keys[e.key] = true));
     window.addEventListener("keyup", (e) => (keys[e.key] = false));
 
-    // Allow shooting with a mouse click
+    // Shooting with mouse click.
     canvas.addEventListener("click", (e) => {
       const angle = Math.atan2(e.clientY - player.y, e.clientX - player.x);
       player.bullets.push({
@@ -779,10 +736,9 @@
       });
     });
 
-    // Allow shooting via touch so that you can shoot while using the D-pad to move.
+    // Shooting with touch (multi-touch supported).
     canvas.addEventListener("touchstart", (e) => {
       e.preventDefault();
-      // Use all changed touches for shooting
       for (let touch of e.changedTouches) {
         const angle = Math.atan2(touch.clientY - player.y, touch.clientX - player.x);
         player.bullets.push({
@@ -795,10 +751,8 @@
     }, { passive: false });
 
     function spawnEnemies() {
-      // Increase enemy count based on round number for normal rounds
       let numberOfEnemies = 6 + roundNumber - 1;
       for (let i = 0; i < numberOfEnemies; i++) {
-        // Determine enemy type: 15% tank, 20% shooter, otherwise melee.
         let rand = Math.random();
         let type;
         if (rand < 0.15) {
@@ -875,47 +829,70 @@
 
     displayLeaderboard();
 
-    /* Mobile Controls Event Listeners */
-    function addMobileControlListeners() {
-      const btnUp = document.getElementById("btn-up");
-      const btnDown = document.getElementById("btn-down");
-      const btnLeft = document.getElementById("btn-left");
-      const btnRight = document.getElementById("btn-right");
+    /* Virtual Joystick Implementation for Mobile */
 
-      // Helper to add both touch and mouse events with passive:false for multi-touch
-      function addButtonListeners(btn, key, active) {
-        btn.addEventListener("touchstart", (e) => {
-          e.preventDefault();
-          keys[key] = active;
-        }, { passive: false });
-        btn.addEventListener("mousedown", (e) => {
-          e.preventDefault();
-          keys[key] = active;
-        });
-        btn.addEventListener("touchend", (e) => {
-          e.preventDefault();
-          keys[key] = !active;
-        }, { passive: false });
-        btn.addEventListener("mouseup", (e) => {
-          e.preventDefault();
-          keys[key] = !active;
-        });
-        // In case the user moves their finger out of the button
-        btn.addEventListener("touchcancel", (e) => {
-          e.preventDefault();
-          keys[key] = !active;
-        }, { passive: false });
-      }
+    const joystickContainer = document.getElementById("joystickContainer");
+    const joystickBase = document.getElementById("joystickBase");
+    const joystickKnob = document.getElementById("joystickKnob");
 
-      // When pressed, set the corresponding key to true.
-      addButtonListeners(btnUp, "w", true);
-      addButtonListeners(btnDown, "s", true);
-      addButtonListeners(btnLeft, "a", true);
-      addButtonListeners(btnRight, "d", true);
+    let maxDistance = joystickBase.clientWidth / 2; // Maximum travel of the knob from center
+
+    // Get the center of the joystick base
+    let joystickCenter = { x: 0, y: 0 };
+    function updateJoystickCenter() {
+      const rect = joystickBase.getBoundingClientRect();
+      joystickCenter = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      };
+    }
+    updateJoystickCenter();
+    window.addEventListener("resize", updateJoystickCenter);
+
+    function handleJoystickStart(e) {
+      e.preventDefault();
+      handleJoystickMove(e);
     }
 
-    // Initialize mobile controls if available
-    addMobileControlListeners();
+    function handleJoystickMove(e) {
+      e.preventDefault();
+      let clientX, clientY;
+      if (e.changedTouches) {
+        // Use first touch point
+        clientX = e.changedTouches[0].clientX;
+        clientY = e.changedTouches[0].clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+      const dx = clientX - joystickCenter.x;
+      const dy = clientY - joystickCenter.y;
+      const distance = Math.hypot(dx, dy);
+      const angle = Math.atan2(dy, dx);
+
+      // Clamp the knob movement to the maximum distance.
+      const clampedDistance = Math.min(distance, maxDistance);
+      const knobX = clampedDistance * Math.cos(angle);
+      const knobY = clampedDistance * Math.sin(angle);
+
+      joystickKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
+
+      // Normalize the joystick output to a range between -1 and 1.
+      joystickDirection.x = knobX / maxDistance;
+      joystickDirection.y = knobY / maxDistance;
+    }
+
+    function handleJoystickEnd(e) {
+      e.preventDefault();
+      joystickKnob.style.transform = `translate(0px, 0px)`;
+      joystickDirection.x = 0;
+      joystickDirection.y = 0;
+    }
+
+    joystickContainer.addEventListener("touchstart", handleJoystickStart, { passive: false });
+    joystickContainer.addEventListener("touchmove", handleJoystickMove, { passive: false });
+    joystickContainer.addEventListener("touchend", handleJoystickEnd, { passive: false });
+    joystickContainer.addEventListener("touchcancel", handleJoystickEnd, { passive: false });
   </script>
 </body>
 </html>
