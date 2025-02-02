@@ -28,6 +28,7 @@
       flex-direction: column;
       color: white;
       z-index: 100;
+      user-select: none;
     }
 
     /* Animated Title (Box Fighter) */
@@ -138,6 +139,7 @@
       flex-direction: column;
       z-index: 100;
       display: none;
+      user-select: none;
     }
 
     #colorPickerContainer {
@@ -209,10 +211,63 @@
       user-select: none;
       font-family: "Lucida Console", "Courier New", monospace;
     }
+
+    /* Mobile Controls - Only visible on smaller screens */
+    #mobileControls {
+      position: fixed;
+      bottom: 40px;
+      left: 40px;
+      z-index: 200;
+      display: none;
+    }
+
+    #mobileControls .dpad {
+      display: grid;
+      grid-template-areas:
+        ". up ."
+        "left . right"
+        ". down .";
+      grid-gap: 1px;
+      width: 70px;
+      height: 250px;
+    }
+
+    #mobileControls button {
+      width: 70px;
+      height: 60px;
+      font-size: 20px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: silver;
+      border: white 5px;
+      border-radius: 5px;
+    }
+
+    #mobileControls .up {
+      grid-area: up;
+    }
+
+    #mobileControls .down {
+      grid-area: down;
+    }
+
+    #mobileControls .left {
+      grid-area: left;
+    }
+
+    #mobileControls .right {
+      grid-area: right;
+    }
+
+    /* Show mobile controls only on devices with narrow screens */
+    @media (max-width: 768px) {
+      #mobileControls {
+        display: block;
+      }
+    }
   </style>
 </head>
 <body>
-  <div id="startMenu" style="user-select:none;">
+  <div id="startMenu">
     <h1>Box Fighter</h1>
     <button onclick="startGame()">Ready Up</button>
     <div id="colorPickerContainer">
@@ -222,7 +277,7 @@
     </div>
   </div>
 
-  <div id="gameOverScreen" style="user-select:none;">
+  <div id="gameOverScreen">
     <h1>Game Over</h1>
     <p id="finalScore">Final Score: 0</p>
     <div id="leaderboard">
@@ -243,6 +298,17 @@
   </div>
   <canvas id="gameCanvas"></canvas>
   <div id="roundMessage"></div>
+  
+  <!-- Mobile Controls (D-pad for movement) -->
+  <div id="mobileControls">
+    <div class="dpad">
+      <button class="up" id="btn-up">↑</button>
+      <button class="left" id="btn-left">←</button>
+      <button class="right" id="btn-right">→</button>
+      <button class="down" id="btn-down">↓</button>
+    </div>
+  </div>
+
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -474,8 +540,8 @@
           (player.size + enemy.size) / 2
         ) {
           if (enemy.type === "boss") {
-    // Boss colliding with the player causes instant death
-    health = 0;
+            // Boss colliding with the player causes instant death
+            health = 0;
           }
           health -= 30;
           enemies.splice(i, 1);
@@ -592,7 +658,7 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const roundMessageElement = document.getElementById("roundMessage");
 
-      // Trigger a new round (or boss round) every 14 seconds
+      // Trigger a new round (or boss round) every 15 seconds
       if (timestamp - lastEnemySpawn > 15000) {
         lastEnemySpawn = timestamp;
         // Boss round: every 5th round
@@ -665,18 +731,17 @@
 
       // Display round message for its duration (5 seconds)
       if (performance.now() < welcomeMessageTime) {
-  // During the welcome period, always display the welcome message.
-  roundMessageElement.textContent = "Welcome Agent B-XFTR";
-  roundMessageElement.style.opacity = 1;
-} else if (timestamp < roundMessageTime) {
-  // After the welcome period, display the round message.
-  roundMessageElement.textContent = roundMessage;
-  roundMessageElement.style.opacity = 1;
-} else {
-  roundMessageElement.style.opacity = 0;
-  roundMessage = "";
-}
-
+        // During the welcome period, always display the welcome message.
+        roundMessageElement.textContent = "Welcome Agent B-XFTR";
+        roundMessageElement.style.opacity = 1;
+      } else if (timestamp < roundMessageTime) {
+        // After the welcome period, display the round message.
+        roundMessageElement.textContent = roundMessage;
+        roundMessageElement.style.opacity = 1;
+      } else {
+        roundMessageElement.style.opacity = 0;
+        roundMessage = "";
+      }
 
       updatePlayer();
       updateBullets();
@@ -697,6 +762,8 @@
 
     window.addEventListener("keydown", (e) => (keys[e.key] = true));
     window.addEventListener("keyup", (e) => (keys[e.key] = false));
+    
+    // Player shoots where tapped/clicked
     canvas.addEventListener("click", (e) => {
       const angle = Math.atan2(e.clientY - player.y, e.clientX - player.x);
       player.bullets.push({
@@ -787,6 +854,48 @@
     }
 
     displayLeaderboard();
+
+    /* Mobile Controls Event Listeners */
+    function addMobileControlListeners() {
+      const btnUp = document.getElementById("btn-up");
+      const btnDown = document.getElementById("btn-down");
+      const btnLeft = document.getElementById("btn-left");
+      const btnRight = document.getElementById("btn-right");
+
+      // Helper to add both touch and mouse events
+      function addButtonListeners(btn, key, active) {
+        btn.addEventListener("touchstart", (e) => {
+          e.preventDefault();
+          keys[key] = active;
+        });
+        btn.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          keys[key] = active;
+        });
+        btn.addEventListener("touchend", (e) => {
+          e.preventDefault();
+          keys[key] = !active;
+        });
+        btn.addEventListener("mouseup", (e) => {
+          e.preventDefault();
+          keys[key] = !active;
+        });
+        // In case the user moves their finger out of the button
+        btn.addEventListener("touchcancel", (e) => {
+          e.preventDefault();
+          keys[key] = !active;
+        });
+      }
+
+      // When pressed, set the corresponding key to true.
+      addButtonListeners(btnUp, "w", true);
+      addButtonListeners(btnDown, "s", true);
+      addButtonListeners(btnLeft, "a", true);
+      addButtonListeners(btnRight, "d", true);
+    }
+
+    // Initialize mobile controls if available
+    addMobileControlListeners();
   </script>
 </body>
 </html>
