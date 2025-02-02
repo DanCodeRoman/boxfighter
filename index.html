@@ -365,6 +365,7 @@
     function playEnemyKillSound() {
       // Clone the node to allow overlapping plays.
       const soundClone = enemyKillSound.cloneNode();
+      soundClone.volume = 1.0
       soundClone.play();
     }
 
