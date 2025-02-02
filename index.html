@@ -254,6 +254,9 @@
   </style>
 </head>
 <body>
+  <!-- Background music element -->
+  <audio id="bgMusic" src="music.mp3" loop></audio>
+
   <div id="startMenu">
     <h1>Box Fighter</h1>
     <button onclick="startGame()">Ready Up</button>
@@ -340,6 +343,11 @@
       if (gameLoopId) {
         cancelAnimationFrame(gameLoopId);
       }
+      // Restart the background music each time the game starts
+      const bgMusic = document.getElementById("bgMusic");
+      bgMusic.currentTime = 0;
+      bgMusic.play();
+
       colorPreview.style.backgroundColor = player.color;
       document.getElementById("startMenu").style.display = "none";
       document.getElementById("gameUI").style.display = "block";
