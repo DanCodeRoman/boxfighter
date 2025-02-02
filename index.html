@@ -30,7 +30,7 @@
       z-index: 100;
     }
 
-    /* Animated Title (Box Fight) */
+    /* Animated Title (Box Fighter) */
     h1 {
       font-size: 80px;
       text-align: center;
@@ -95,6 +95,27 @@
     #healthBarInner {
       height: 100%;
       background-color: green;
+      transition: width 0.3s;
+    }
+
+    /* Boss Health Bar Styling */
+    #bossHealthBarContainer {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 400px;
+      height: 30px;
+      border: 3px solid white;
+      border-radius: 20px;
+      display: none;
+      z-index: 15;
+    }
+    #bossHealthBarInner {
+      height: 100%;
+      width: 100%;
+      background-color: darkred;
+      border-radius: 20px;
       transition: width 0.3s;
     }
 
@@ -184,7 +205,7 @@
       color: black;
       z-index: 50;
       opacity: 0;
-      transition: opacity 2s ease-in-out;
+      transition: opacity 0.5s ease-in-out;
       user-select: none;
       font-family: "Lucida Console", "Courier New", monospace;
     }
@@ -216,6 +237,10 @@
     </div>
     <p id="score" style="user-select: none;">Score: 0</p>
   </div>
+  <!-- Boss Health Bar -->
+  <div id="bossHealthBarContainer">
+    <div id="bossHealthBarInner"></div>
+  </div>
   <canvas id="gameCanvas"></canvas>
   <div id="roundMessage"></div>
   <script>
@@ -236,6 +261,9 @@
     let gameLoopId;
     let gameStarted = false;
     let welcomeMessageTime = 0;
+
+    // The boss (if any) will be stored here.
+    let boss = null;
 
     const player = {
       x: canvas.width / 2,
@@ -263,25 +291,25 @@
       if (gameLoopId) {
         cancelAnimationFrame(gameLoopId);
       }
-
+      // Reset UI and game variables
       colorPreview.style.backgroundColor = player.color;
       document.getElementById("startMenu").style.display = "none";
       document.getElementById("gameUI").style.display = "block";
       document.getElementById("gameOverScreen").style.display = "none";
+      document.getElementById("bossHealthBarContainer").style.display = "none";
       health = 100;
       score = 0;
       enemies = [];
       healthBoosts = [];
-      lastEnemySpawn = 0;
+      lastEnemySpawn = performance.now();
       roundNumber = 1;
+      // Set the initial welcome message and display it for 4 seconds
       roundMessage = "Welcome Agent B-XFTR";
-      roundMessageTime = performance.now() + 4000; // Display for 4 seconds
+      roundMessageTime = performance.now() + 4000;
       gameStarted = true;
-      welcomeMessageTime = performance.now() + 4000; // Show "Welcome" for 4 seconds
-
+      welcomeMessageTime = performance.now() + 4000;
+      boss = null; // Clear any boss reference
       displayLeaderboard();
-
-      // Start the game loop
       gameLoop();
     }
 
@@ -318,8 +346,12 @@
 
     function drawEnemies() {
       for (let enemy of enemies) {
-        // For the tank enemy, use yellow color; otherwise, use the preset enemy color.
-        ctx.shadowColor = enemy.type === "tank" ? "yellow" : "white";
+        // For the tank enemy, use yellow shadow; for the boss, use white.
+        if (enemy.type === "boss") {
+          ctx.shadowColor = "white";
+        } else {
+          ctx.shadowColor = enemy.type === "tank" ? "yellow" : "white";
+        }
         ctx.shadowBlur = 5;
         ctx.fillStyle = enemy.color;
         ctx.fillRect(
@@ -330,11 +362,10 @@
         );
         ctx.shadowColor = enemy.type === "tank" ? "yellow" : "white";
         ctx.shadowBlur = 5;
-
-        // Draw shooter enemy bullets
-        if (enemy.type === "shooter") {
+        // Draw bullets for shooter and boss enemies
+        if (enemy.type === "shooter" || enemy.type === "boss") {
           for (let bullet of enemy.bullets) {
-            ctx.fillStyle = "darkblue"; // Bullet color for shooter
+            ctx.fillStyle = enemy.type === "boss" ? "purple" : "darkblue";
             ctx.beginPath();
             ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
             ctx.fill();
@@ -351,7 +382,6 @@
         const bullet = player.bullets[i];
         bullet.x += bullet.dx;
         bullet.y += bullet.dy;
-
         if (
           bullet.x < 0 ||
           bullet.x > canvas.width ||
@@ -361,17 +391,14 @@
           player.bullets.splice(i, 1);
         }
       }
-
-      // Update enemy projectiles
+      // Update enemy (or boss) projectiles
       for (let i = 0; i < enemies.length; i++) {
         const enemy = enemies[i];
-        if (enemy.type === "shooter") {
-          for (let j = 0; j < enemy.bullets.length; j++) {
+        if (enemy.type === "shooter" || enemy.type === "boss") {
+          for (let j = enemy.bullets.length - 1; j >= 0; j--) {
             const bullet = enemy.bullets[j];
             bullet.x += bullet.dx;
             bullet.y += bullet.dy;
-
-            // Remove bullets if they go out of bounds
             if (
               bullet.x < 0 ||
               bullet.x > canvas.width ||
@@ -421,19 +448,16 @@
     function updateEnemies() {
       for (let i = enemies.length - 1; i >= 0; i--) {
         const enemy = enemies[i];
-
-        // Move the enemy toward the player
+        // Move enemy (or boss) toward the player
         const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
         enemy.x += Math.cos(angle) * enemy.speed;
         enemy.y += Math.sin(angle) * enemy.speed;
-
-        // Update shooter enemy bullets
-        if (enemy.type === "shooter") {
+        // Update bullets for shooter or boss enemies
+        if (enemy.type === "shooter" || enemy.type === "boss") {
           for (let j = enemy.bullets.length - 1; j >= 0; j--) {
             const bullet = enemy.bullets[j];
             bullet.x += bullet.dx;
             bullet.y += bullet.dy;
-
             if (
               bullet.x < 0 ||
               bullet.x > canvas.width ||
@@ -444,12 +468,15 @@
             }
           }
         }
-
         // Check collision with player
         if (
           Math.hypot(player.x - enemy.x, player.y - enemy.y) <
           (player.size + enemy.size) / 2
         ) {
+          if (enemy.type === "boss") {
+    // Boss colliding with the player causes instant death
+    health = 0;
+          }
           health -= 30;
           enemies.splice(i, 1);
           if (health <= 0) {
@@ -480,33 +507,44 @@
         for (let j = enemies.length - 1; j >= 0; j--) {
           const enemy = enemies[j];
           if (Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y) < 20) {
-            // If the enemy is a tank, reduce its hitsRemaining instead of instantly removing it
             if (enemy.type === "tank") {
               enemy.hitsRemaining--;
-              player.bullets.splice(i, 1); // Remove the bullet
-              // Only add score and bonus health when the tank is finally destroyed
+              player.bullets.splice(i, 1);
               if (enemy.hitsRemaining <= 0) {
                 score += 15;
                 health = Math.min(100, health + 5);
                 enemies.splice(j, 1);
               }
               break;
+            } else if (enemy.type === "boss") {
+              enemy.hitsRemaining--;
+              player.bullets.splice(i, 1);
+              // Update the boss health bar width based on the remaining hits (out of 85)
+              const bossBar = document.getElementById("bossHealthBarInner");
+              bossBar.style.width = (enemy.hitsRemaining / 85) * 100 + "%";
+              if (enemy.hitsRemaining <= 0) {
+                score += 50;
+                clearInterval(enemy.continuousShootInterval);
+                clearInterval(enemy.circleShootInterval);
+                enemies.splice(j, 1);
+                boss = null;
+                document.getElementById("bossHealthBarContainer").style.display = "none";
+              }
+              break;
             } else {
-              // Normal enemy types are destroyed with one hit
               score += 15;
               health = Math.min(100, health + 5);
-              player.bullets.splice(i, 1); // Remove the bullet
-              enemies.splice(j, 1); // Remove the enemy
+              player.bullets.splice(i, 1);
+              enemies.splice(j, 1);
               break;
             }
           }
         }
       }
-
-      // Check if player is hit by shooter enemy bullets
+      // Check if player is hit by shooter or boss bullets
       for (let i = 0; i < enemies.length; i++) {
         const enemy = enemies[i];
-        if (enemy.type === "shooter") {
+        if (enemy.type === "shooter" || enemy.type === "boss") {
           for (let j = enemy.bullets.length - 1; j >= 0; j--) {
             const bullet = enemy.bullets[j];
             if (
@@ -552,30 +590,93 @@
 
     function gameLoop(timestamp) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      let roundMessageElement = document.getElementById("roundMessage");
+      const roundMessageElement = document.getElementById("roundMessage");
 
-      // Check if it's time for a new round
-      if (timestamp - lastEnemySpawn > 14000) {
+      // Trigger a new round (or boss round) every 14 seconds
+      if (timestamp - lastEnemySpawn > 15000) {
         lastEnemySpawn = timestamp;
-        roundMessageTime = timestamp + 2000;
-        roundMessage = `Wave ${roundNumber}`;
+        // Boss round: every 5th round
+        if (roundNumber % 5 === 0) {
+          roundMessage = "Boss Incoming";
+          roundMessageTime = timestamp + 5000;
+          setTimeout(() => {
+            if (!boss) {
+              // Clear any remaining enemies and spawn the boss
+              enemies = [];
+              boss = {
+                x: canvas.width / 2,
+                y: canvas.height / 4,
+                type: "boss",
+                size: 120,
+                color: "darkred",
+                speed: 2.35,
+                hitsRemaining: 85,
+                bullets: []
+              };
+              enemies.push(boss);
+              const bossBar = document.getElementById("bossHealthBarInner");
+              bossBar.style.width = "100%";
+              document.getElementById("bossHealthBarContainer").style.display = "block";
+
+              // Continuous shooting every second
+              boss.continuousShootInterval = setInterval(() => {
+                const angle = Math.atan2(player.y - boss.y, player.x - boss.x);
+                const bullet = {
+                  x: boss.x,
+                  y: boss.y,
+                  dx: Math.cos(angle) * 4,
+                  dy: Math.sin(angle) * 4,
+                  size: 8,
+                  color: "purple"
+                };
+                boss.bullets.push(bullet);
+              }, 1000);
+
+              // Every 5 seconds, shoot a circle of slow bullets
+              boss.circleShootInterval = setInterval(() => {
+                const numBullets = 12;
+                for (let i = 0; i < numBullets; i++) {
+                  const angle = (i * 2 * Math.PI) / numBullets;
+                  const bullet = {
+                    x: boss.x,
+                    y: boss.y,
+                    dx: Math.cos(angle) * 2,
+                    dy: Math.sin(angle) * 2,
+                    size: 6,
+                    color: "blue"
+                  };
+                  boss.bullets.push(bullet);
+                }
+              }, 5000);
+            }
+          }, 5000);
+        } else {
+          // Normal round: display wave number then spawn enemies after 5 seconds.
+          roundMessage = "Wave " + roundNumber;
+          roundMessageTime = timestamp + 5000;
+          setTimeout(() => {
+            spawnEnemies();
+            spawnHealthBoost();
+            spawnShooterBullets();
+          }, 5000);
+        }
         roundNumber++;
-
-        setTimeout(() => {
-          spawnEnemies();
-          spawnHealthBoost();
-          spawnShooterBullets();
-        }, 4000);
       }
 
-      // Show round message for a short period
-      if (timestamp < roundMessageTime && timestamp > roundMessageTime - 3000) {
-        roundMessageElement.textContent = roundMessage;
-        roundMessageElement.style.opacity = 1;
-      } else if (timestamp > roundMessageTime + 100) {
-        roundMessageElement.style.opacity = 0;
-        roundMessage = "";
-      }
+      // Display round message for its duration (5 seconds)
+      if (performance.now() < welcomeMessageTime) {
+  // During the welcome period, always display the welcome message.
+  roundMessageElement.textContent = "Welcome Agent B-XFTR";
+  roundMessageElement.style.opacity = 1;
+} else if (timestamp < roundMessageTime) {
+  // After the welcome period, display the round message.
+  roundMessageElement.textContent = roundMessage;
+  roundMessageElement.style.opacity = 1;
+} else {
+  roundMessageElement.style.opacity = 0;
+  roundMessage = "";
+}
+
 
       updatePlayer();
       updateBullets();
@@ -607,11 +708,10 @@
     });
 
     function spawnEnemies() {
-      // Increase enemy count based on round number
+      // Increase enemy count based on round number for normal rounds
       let numberOfEnemies = 6 + roundNumber - 1;
       for (let i = 0; i < numberOfEnemies; i++) {
-        // Determine enemy type based on random chance:
-        // 15% chance for a tank, 20% chance for a shooter, otherwise melee.
+        // Determine enemy type: 15% tank, 20% shooter, otherwise melee.
         let rand = Math.random();
         let type;
         if (rand < 0.15) {
@@ -621,7 +721,6 @@
         } else {
           type = "melee";
         }
-
         let enemy = {
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
@@ -630,25 +729,21 @@
           dy: 0,
           bullets: []
         };
-
-        // Set properties based on enemy type
         if (type === "shooter") {
           enemy.size = 40;
           enemy.color = "darkblue";
           enemy.speed = 1.75;
           enemy.shootCooldown = 0;
         } else if (type === "tank") {
-          enemy.size = 60;           // Bigger size
-          enemy.color = "yellow";      // Yellow color
-          enemy.speed = 1.25;          // Slower movement
-          enemy.hitsRemaining = 5;     // Requires 5 shots to kill
+          enemy.size = 60;
+          enemy.color = "yellow";
+          enemy.speed = 1.25;
+          enemy.hitsRemaining = 5;
         } else {
-          // Melee enemy
           enemy.size = 30;
           enemy.color = "red";
           enemy.speed = 2.35;
         }
-
         enemies.push(enemy);
       }
     }
@@ -664,7 +759,6 @@
               y: enemy.y,
               size: 5,
               color: "darkblue",
-              speed: 5,
               dx: Math.cos(angle) * 5,
               dy: Math.sin(angle) * 5
             };
