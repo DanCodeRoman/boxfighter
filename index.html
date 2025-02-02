@@ -87,7 +87,6 @@
       background-color: #222;
       border: 2px solid #fff;
       border-radius: 5px;
-      user-select: none;
     }
 
     /* Game UI (Hidden by default) */
@@ -271,6 +270,9 @@
   <!-- Background music element -->
   <audio id="bgMusic" src="music.mp3" loop></audio>
 
+  <!-- Enemy kill sound (will be cloned to allow overlapping) -->
+  <audio id="enemyKillSound" src="enemy-kill.mp3"></audio>
+
   <!-- Mute Music Button -->
   <button id="muteButton" onclick="toggleMusic()">Mute Music</button>
 
@@ -314,11 +316,13 @@
   </div>
 
   <script>
+    // Set up canvas
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
+    // Global variables
     let keys = {};
     let health = 100;
     let score = 0;
@@ -355,6 +359,14 @@
       player.color = e.target.value;
       colorPreview.style.backgroundColor = e.target.value;
     });
+
+    // Create enemy kill sound helper.
+    const enemyKillSound = document.getElementById("enemyKillSound");
+    function playEnemyKillSound() {
+      // Clone the node to allow overlapping plays.
+      const soundClone = enemyKillSound.cloneNode();
+      soundClone.play();
+    }
 
     function startGame() {
       if (gameLoopId) {
@@ -501,7 +513,7 @@
       }
     }
 
-    // Update player based on keyboard (if any) and joystick input.
+    // Update player based on keyboard and joystick input.
     function updatePlayer() {
       if (keys["w"] && player.y - player.size / 2 > 0) player.y -= 5;
       if (keys["s"] && player.y + player.size / 2 < canvas.height) player.y += 5;
@@ -572,6 +584,7 @@
         for (let j = enemies.length - 1; j >= 0; j--) {
           const enemy = enemies[j];
           if (Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y) < 20) {
+            // For tank enemies, subtract a hit and play sound on final hit
             if (enemy.type === "tank") {
               enemy.hitsRemaining--;
               player.bullets.splice(i, 1);
@@ -579,6 +592,7 @@
                 score += 15;
                 health = Math.min(100, health + 5);
                 enemies.splice(j, 1);
+                playEnemyKillSound();
               }
               break;
             } else if (enemy.type === "boss") {
@@ -596,10 +610,12 @@
               }
               break;
             } else {
+              // For melee and shooter enemies
               score += 15;
               health = Math.min(100, health + 5);
               player.bullets.splice(i, 1);
               enemies.splice(j, 1);
+              playEnemyKillSound();
               break;
             }
           }
