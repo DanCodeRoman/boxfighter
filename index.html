@@ -866,10 +866,7 @@
         clientX = e.clientX;
         clientY = e.clientY;
       }
-      const rect = joystickBase.getBoundingClientRect();
-  // Compute the center of the joystick base.
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top + rect.height / 2;
+      
       
       const dx = clientX - joystickCenter.x;
       const dy = clientY - joystickCenter.y;
