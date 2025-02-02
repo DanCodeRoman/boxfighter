@@ -76,6 +76,19 @@
       transform: scale(1.05);
     }
 
+    /* Mute Music Button - Fixed in Top Right */
+    #muteButton {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 110;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #222;
+      border: 2px solid #fff;
+      border-radius: 5px;
+    }
+
     /* Game UI (Hidden by default) */
     #gameUI {
       position: absolute;
@@ -256,6 +269,9 @@
 <body>
   <!-- Background music element -->
   <audio id="bgMusic" src="music.mp3" loop></audio>
+
+  <!-- Mute Music Button -->
+  <button id="muteButton" onclick="toggleMusic()">Mute Music</button>
 
   <div id="startMenu">
     <h1>Box Fighter</h1>
@@ -875,7 +891,6 @@
         clientY = e.clientY;
       }
       
-      
       const dx = clientX - joystickCenter.x;
       const dy = clientY - joystickCenter.y;
       const distance = Math.hypot(dx, dy);
@@ -904,6 +919,19 @@
     joystickContainer.addEventListener("touchmove", handleJoystickMove, { passive: false });
     joystickContainer.addEventListener("touchend", handleJoystickEnd, { passive: false });
     joystickContainer.addEventListener("touchcancel", handleJoystickEnd, { passive: false });
+
+    // Function to toggle the music on/off.
+    function toggleMusic() {
+      const bgMusic = document.getElementById("bgMusic");
+      const muteButton = document.getElementById("muteButton");
+      if (bgMusic.muted) {
+        bgMusic.muted = false;
+        muteButton.textContent = "Mute Music";
+      } else {
+        bgMusic.muted = true;
+        muteButton.textContent = "Unmute Music";
+      }
+    }
   </script>
 </body>
 </html>
