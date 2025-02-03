@@ -227,42 +227,9 @@
       font-family: "Lucida Console", "Courier New", monospace;
     }
 
-    /* Virtual Joystick Styling - Only visible on mobile/narrow screens */
+    /* Hide the on-screen joystick for mobile since we’re using accelerometer controls */
     #joystickContainer {
-      position: fixed;
-      bottom: 0px;
-      left: 0px;
-      width: 200px;
-      height: 200px;
-      z-index: 0;
       display: none;
-      touch-action: none;
-    }
-    #joystickBase {
-      position: fixed;
-      width: 200px;
-      height: 200px;
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 50%;
-    }
-    #joystickKnob {
-      position: absolute;
-      top: 75px;
-      left: 75px;
-      width: 50px;
-      height: 50px;
-      background: rgba(255, 255, 255, 0.7);
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      transition: transform 0.2s ease-out;
-      touch-action: none;
-    }
-
-    /* Show joystick on devices with narrow screens */
-    @media (max-width: 1000px) {
-      #joystickContainer {
-        display: block;
-      }
     }
   </style>
 </head>
@@ -308,12 +275,7 @@
   <canvas id="gameCanvas"></canvas>
   <div id="roundMessage"></div>
   
-  <!-- Virtual Joystick (for mobile movement) -->
-  <div id="joystickContainer">
-    <div id="joystickBase">
-      <div id="joystickKnob"></div>
-    </div>
-  </div>
+  <!-- (On-screen joystick removed for mobile controls) -->
 
   <script>
     // Set up canvas
@@ -345,8 +307,9 @@
       bullets: []
     };
 
-    // Joystick direction vector (values between -1 and 1)
-    let joystickDirection = { x: 0, y: 0 };
+    // For desktop users, keyboard movement will be used.
+    // For mobile users, we will use the deviceorientation event.
+    let accelerometerEnabled = false;
 
     const colorPicker = document.getElementById("playerColor");
     const colorPreview = document.getElementById("colorPreview");
@@ -370,6 +333,51 @@
       }).catch(err => {
         console.error("Error playing enemy kill sound:", err);
       });
+    }
+
+    // Accelerometer-based movement for mobile devices.
+    function handleOrientation(event) {
+      // event.gamma: left/right tilt in degrees.
+      // event.beta: front/back tilt in degrees.
+      // Map these values to player movement.
+      // Adjust the sensitivity factors as needed.
+      const factor = 0.5; // Sensitivity factor for movement
+      // For horizontal movement, use gamma (range ~ -30 to 30 degrees)
+      // For vertical movement, use beta offset by 90 degrees (level is ~90)
+      player.x += event.gamma * factor;
+      player.y += (event.beta - 90) * factor;
+      
+      // Constrain player within the canvas.
+      player.x = Math.max(player.size / 2, Math.min(canvas.width - player.size / 2, player.x));
+      player.y = Math.max(player.size / 2, Math.min(canvas.height - player.size / 2, player.y));
+    }
+
+    // Request device orientation for mobile (iOS 13+ requires permission)
+    function enableAccelerometerControls() {
+      if (window.DeviceOrientationEvent) {
+        // For iOS 13+ devices
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+          DeviceOrientationEvent.requestPermission()
+            .then(permissionState => {
+              if (permissionState === 'granted') {
+                window.addEventListener("deviceorientation", handleOrientation);
+                accelerometerEnabled = true;
+                console.log("Accelerometer enabled.");
+              }
+            })
+            .catch(console.error);
+        } else {
+          // Non-iOS 13+ devices that support deviceorientation
+          window.addEventListener("deviceorientation", handleOrientation);
+          accelerometerEnabled = true;
+          console.log("Accelerometer enabled.");
+        }
+      }
+    }
+
+    // Only enable accelerometer controls on mobile devices.
+    if (/Mobi|Android/i.test(navigator.userAgent)) {
+      enableAccelerometerControls();
     }
 
     function startGame() {
@@ -517,18 +525,15 @@
       }
     }
 
-    // Update player based on keyboard and joystick input.
+    // Update player based on keyboard input (for desktop).
+    // (On mobile, the deviceorientation event updates player.x and player.y directly.)
     function updatePlayer() {
       if (keys["w"] && player.y - player.size / 2 > 0) player.y -= 5;
       if (keys["s"] && player.y + player.size / 2 < canvas.height) player.y += 5;
       if (keys["a"] && player.x - player.size / 2 > 0) player.x -= 5;
       if (keys["d"] && player.x + player.size / 2 < canvas.width) player.x += 5;
-      // Apply joystick movement
-      player.x += joystickDirection.x * 5;
-      player.y += joystickDirection.y * 5;
-      // Constrain player to canvas boundaries
-      player.x = Math.max(player.size / 2, Math.min(canvas.width - player.size / 2, player.x));
-      player.y = Math.max(player.size / 2, Math.min(canvas.height - player.size / 2, player.y));
+      // For desktop, keyboard control applies.
+      // On mobile, player movement is updated via deviceorientation.
     }
 
     function updateEnemies() {
@@ -874,68 +879,6 @@
     }
 
     displayLeaderboard();
-
-    /* Virtual Joystick Implementation for Mobile */
-
-    const joystickContainer = document.getElementById("joystickContainer");
-    const joystickBase = document.getElementById("joystickBase");
-    const joystickKnob = document.getElementById("joystickKnob");
-
-    let maxDistance = joystickBase.clientWidth / 2; // Maximum travel of the knob from center
-
-    // Get the center of the joystick base
-    let joystickCenter = { x: 0, y: 0 };
-    function updateJoystickCenter() {
-      const rect = joystickBase.getBoundingClientRect();
-      joystickCenter = {
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2
-      };
-    }
-    updateJoystickCenter();
-    window.addEventListener("resize", updateJoystickCenter);
-
-    function handleJoystickStart(e) {
-      e.preventDefault();
-      handleJoystickMove(e);
-    }
-
-    function handleJoystickMove(e) {
-      e.preventDefault();
-      let clientX, clientY;
-      if (e.changedTouches) {
-        clientX = e.changedTouches[0].clientX;
-        clientY = e.changedTouches[0].clientY;
-      } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
-      }
-      
-      const dx = clientX - joystickCenter.x;
-      const dy = clientY - joystickCenter.y;
-      const distance = Math.hypot(dx, dy);
-      const angle = Math.atan2(dy, dx);
-
-      const clampedDistance = Math.min(distance, maxDistance);
-      const knobX = clampedDistance * Math.cos(angle);
-      const knobY = clampedDistance * Math.sin(angle);
-
-      joystickKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
-      joystickDirection.x = knobX / maxDistance;
-      joystickDirection.y = knobY / maxDistance;
-    }
-
-    function handleJoystickEnd(e) {
-      e.preventDefault();
-      joystickKnob.style.transform = `translate(0px, 0px)`;
-      joystickDirection.x = 0;
-      joystickDirection.y = 0;
-    }
-
-    joystickContainer.addEventListener("touchstart", handleJoystickStart, { passive: false });
-    joystickContainer.addEventListener("touchmove", handleJoystickMove, { passive: false });
-    joystickContainer.addEventListener("touchend", handleJoystickEnd, { passive: false });
-    joystickContainer.addEventListener("touchcancel", handleJoystickEnd, { passive: false });
 
     // Function to toggle the music on/off.
     function toggleMusic() {
