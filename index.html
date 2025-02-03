@@ -80,9 +80,21 @@
       background: linear-gradient(45deg, #ff6b6b, #ffcd3c, #6b94ff, #6bffb8);
       -webkit-background-clip: text;
       color: transparent;
-      animation: gradient-text 3s linear infinite;
+      animation: gradient-text 3s linear infinite, pulsate 2s ease-in-out infinite;
       margin-bottom: 30px;
     }
+
+    @keyframes pulsate {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
     @keyframes gradient-text {
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
