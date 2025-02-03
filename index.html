@@ -81,15 +81,9 @@
       margin-bottom: 30px;
     }
     @keyframes gradient-text {
-      0% {
-        background-position: 0% 50%;
-      }
-      50% {
-        background-position: 100% 50%;
-      }
-      100% {
-        background-position: 0% 50%;
-      }
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
     /* Button Styling */
     button {
@@ -584,6 +578,7 @@
       }
     }
     
+    // When starting the game, include a 5‑second welcome phase.
     function startGame() {
       if (paused) {
         paused = false;
@@ -648,7 +643,7 @@
     }
     
     function spawnHealthBoost() {
-      // Feature 7: Change color to a more contrasting pink (hotpink)
+      // Health boosts now use "hotpink" for better contrast.
       if (Math.random() < 0.25) {
         healthBoosts.push({
           x: Math.random() * canvas.width,
@@ -688,7 +683,7 @@
     
     function drawEnemies() {
       for (let enemy of enemies) {
-        // Boss/tank/shooter use specific colors; clone enemies are now drawn white; melee remain red.
+        // Boss/tank/shooter use specific colors; clone enemies are drawn white; melee remain red.
         ctx.shadowColor = enemy.type === "boss" ? "white" :
                           enemy.type === "tank" ? "yellow" : 
                           enemy.type === "clone" ? "white" : "red";
@@ -701,7 +696,7 @@
           enemy.size
         );
         ctx.shadowBlur = 5;
-        // For boss enemies, draw their bullets stored in their own bullets array.
+        // For boss enemies, draw their bullets (boss bullets are stored in enemy.bullets)
         if (enemy.type === "boss") {
           for (let bullet of enemy.bullets) {
             ctx.fillStyle = "purple";
@@ -716,7 +711,7 @@
     }
     
     function updateBullets() {
-      // Update player's bullets
+      // Update player's bullets.
       for (let i = player.bullets.length - 1; i >= 0; i--) {
         const bullet = player.bullets[i];
         bullet.x += bullet.dx;
@@ -730,7 +725,7 @@
           player.bullets.splice(i, 1);
         }
       }
-      // Update global enemy bullets (from shooter enemies)
+      // Update global enemy bullets (from shooter enemies).
       for (let i = enemyBullets.length - 1; i >= 0; i--) {
         const bullet = enemyBullets[i];
         bullet.x += bullet.dx;
@@ -744,7 +739,7 @@
           enemyBullets.splice(i, 1);
         }
       }
-      // Also update boss enemy bullets (they are stored in enemy.bullets)
+      // Update boss enemy bullets (stored in enemy.bullets).
       for (let enemy of enemies) {
         if (enemy.type === "boss") {
           for (let i = enemy.bullets.length - 1; i >= 0; i--) {
@@ -791,7 +786,7 @@
     }
     
     function drawBullets() {
-      // Draw player's bullets
+      // Draw player's bullets.
       for (let bullet of player.bullets) {
         ctx.shadowColor = "red";
         ctx.shadowBlur = 8;
@@ -802,7 +797,7 @@
         ctx.shadowColor = "red";
         ctx.shadowBlur = 8;
       }
-      // Draw enemy bullets (from shooter enemies)
+      // Draw enemy bullets (from shooter enemies).
       for (let bullet of enemyBullets) {
         ctx.shadowColor = "darkblue";
         ctx.shadowBlur = 8;
@@ -844,7 +839,7 @@
           enemy.x += Math.cos(angle) * enemy.speed;
           enemy.y += Math.sin(angle) * enemy.speed;
         }
-        // Use full rectangular collision between player and enemy
+        // Collision: check if player's rectangle overlaps enemy's full rectangle.
         if (
           player.x + player.size/2 > enemy.x - enemy.size/2 &&
           player.x - player.size/2 < enemy.x + enemy.size/2 &&
@@ -855,7 +850,7 @@
             health = 0;
           }
           health -= 30;
-          // If the enemy is a shooter, clear its shooting interval.
+          // If enemy is a shooter, clear its shooting interval.
           if (enemy.shootInterval) {
             clearInterval(enemy.shootInterval);
           }
@@ -868,7 +863,7 @@
       }
     }
     
-    // When a shooter enemy (or boss if desired) shoots, add its bullet.
+    // Shooter enemies already use shootAtPlayer (which pushes bullets into enemyBullets).
     function shootAtPlayer(enemy) {
       const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
       const bullet = {
@@ -880,16 +875,57 @@
         color: enemy.type === "boss" ? "purple" : "darkblue"
       };
       if (enemy.type === "shooter") {
-        // For shooter enemy, push bullet into global enemyBullets array.
         enemyBullets.push(bullet);
       } else {
-        // For boss, keep its own bullet array.
         enemy.bullets.push(bullet);
       }
     }
     
+    // NEW: Boss enemy special shooting.
+    // The boss will both shoot one bullet at the player and fire a ring of bullets.
+    function bossShoot(enemy) {
+      // Aim a bullet at the player.
+      const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+      const aimedBullet = {
+        x: enemy.x,
+        y: enemy.y,
+        dx: Math.cos(angle) * 5,
+        dy: Math.sin(angle) * 5,
+        size: 5,
+        color: "purple"
+      };
+      enemy.bullets.push(aimedBullet);
+      // Fire a ring of bullets.
+      const bulletCount = 12;
+      const bulletSpeed = 4;
+      for (let i = 0; i < bulletCount; i++) {
+        const ringAngle = (2 * Math.PI * i) / bulletCount;
+        const ringBullet = {
+          x: enemy.x,
+          y: enemy.y,
+          dx: Math.cos(ringAngle) * bulletSpeed,
+          dy: Math.sin(ringAngle) * bulletSpeed,
+          size: 5,
+          color: "purple"
+        };
+        enemy.bullets.push(ringBullet);
+      }
+    }
+    
+    // When a boss enemy is created, initialize its shooting.
+    function initBoss(enemy) {
+      enemy.shootInterval = setInterval(() => {
+        // Only shoot if still alive.
+        if (enemies.indexOf(enemy) !== -1) {
+          bossShoot(enemy);
+        } else {
+          clearInterval(enemy.shootInterval);
+        }
+      }, 3000);
+    }
+    
     function checkBulletCollisions() {
-      // Check player's bullets hitting enemies using full rectangle hitbox.
+      // Check player's bullets vs enemy hitboxes.
       for (let i = player.bullets.length - 1; i >= 0; i--) {
         const bullet = player.bullets[i];
         for (let j = enemies.length - 1; j >= 0; j--) {
@@ -924,7 +960,6 @@
                 const baseAngle = Math.random() * 2 * Math.PI;
                 const splitSpeed = 5;
                 const currentTime = performance.now();
-                // Cloned enemies are now white.
                 const clone1 = {
                   x: enemy.x,
                   y: enemy.y,
@@ -978,7 +1013,7 @@
           }
         }
       }
-      // Check collisions between global enemy bullets (from shooter enemies) and the player.
+      // Check collisions between global enemy bullets and the player.
       for (let i = enemyBullets.length - 1; i >= 0; i--) {
         const bullet = enemyBullets[i];
         if (
@@ -992,7 +1027,7 @@
           }
         }
       }
-      // Check boss enemy bullets (handled separately in updateBullets, but collisions here too)
+      // Check boss enemy bullets.
       for (let enemy of enemies) {
         if (enemy.type === "boss") {
           for (let i = enemy.bullets.length - 1; i >= 0; i--) {
@@ -1052,9 +1087,9 @@
       updateLeaderboard(score);
     }
     
-    // NEW WAVE SYSTEM WITH WELCOME PHASE, WAVE MESSAGES, and extra boss chance after round 10.
+    // Wave system with welcome phase and wave messages.
     function handleWaveLogic(timestamp) {
-      // During welcome phase, show welcome message.
+      // During welcome phase, show the welcome message.
       if (welcomePhase) {
         if (timestamp >= welcomePhaseEndTime) {
           welcomePhase = false;
@@ -1067,7 +1102,6 @@
           return;
         }
       }
-      
       // Normal wave logic.
       if (timestamp >= nextWaveTime) {
         if (!waveStarted) {
@@ -1082,7 +1116,8 @@
         }
         if (timestamp >= waveStartTime + waveMessageDuration && !enemiesSpawnedForWave) {
           if (roundNumber === 5) {
-            enemies.push({
+            // Create boss enemy with shooting functionality.
+            let bossEnemy = {
               x: canvas.width / 2,
               y: canvas.height / 4,
               type: "boss",
@@ -1091,14 +1126,16 @@
               speed: 2.35,
               hitsRemaining: 85,
               bullets: []
-            });
+            };
+            initBoss(bossEnemy);
+            enemies.push(bossEnemy);
           } else {
             spawnEnemies();
             spawnHealthBoost();
             spawnCoin();
-            // Feature 3: After round 10, 30% chance to spawn an extra boss each wave.
+            // After round 10, extra boss chance.
             if (roundNumber > 10 && Math.random() < 0.3) {
-              enemies.push({
+              let extraBoss = {
                 x: canvas.width / 2,
                 y: canvas.height / 4,
                 type: "boss",
@@ -1107,7 +1144,9 @@
                 speed: 2.35,
                 hitsRemaining: 85,
                 bullets: []
-              });
+              };
+              initBoss(extraBoss);
+              enemies.push(extraBoss);
             }
           }
           enemiesSpawnedForWave = true;
@@ -1252,7 +1291,8 @@
       }
     }, { passive: false });
     
-    // Modified spawnEnemies to include clone enemies (chance when roundNumber >= 5). Clone enemies are white.
+    // Modified spawnEnemies to include clone enemies (chance when roundNumber >= 5).
+    // Clone enemies are drawn white.
     function spawnEnemies() {
       let numberOfEnemies = 6 + roundNumber - 1;
       for (let i = 0; i < numberOfEnemies; i++) {
@@ -1280,13 +1320,11 @@
           enemy.color = "darkblue";
           enemy.speed = 1.75;
           enemy.shootCooldown = 0;
-          // Start shooter enemy shooting interval; this interval will push bullets to global enemyBullets.
           enemy.shootInterval = setInterval(() => {
-            // Only shoot if enemy still exists (a simple check)
-            if (enemies.indexOf(enemy) === -1) {
-              clearInterval(enemy.shootInterval);
-            } else {
+            if (enemies.indexOf(enemy) !== -1) {
               shootAtPlayer(enemy);
+            } else {
+              clearInterval(enemy.shootInterval);
             }
           }, 800);
         } else if (type === "tank") {
@@ -1341,7 +1379,7 @@
       }
     }
     
-    // Gun Shop functions
+    // Gun Shop functions.
     function openGunShop() {
       document.getElementById("gunShopModal").style.display = "block";
     }
