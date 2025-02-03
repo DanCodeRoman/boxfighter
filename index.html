@@ -588,6 +588,8 @@
     
     // When starting the game, include a 5‑second welcome phase.
     function startGame() {
+       const canvas = document.getElementById("gameCanvas");
+        canvas.style.cursor = "crosshair";
       if (paused) {
         paused = false;
         document.getElementById("startMenu").style.display = "none";
