@@ -44,7 +44,7 @@
     /* Coin counter for main menu (top right) */
     #menuCoinCounter {
       position: absolute;
-      top: 50px;
+      top: 10px;
       right: 10px;
       border: 2px solid gold;
       padding: 8px 12px;
@@ -406,6 +406,10 @@
       <strong>Shotgun</strong><br>
       (300 Coins) - 3-shot spread.
     </div>
+    <div class="gunOption" onclick="selectGun('uzi')">
+      <strong>Uzi</strong><br>
+      (1000 Coins) - Burst fire of 5 bullets.
+    </div>
     <button id="closeGunShop" onclick="closeGunShop()">Close</button>
   </div>
 
@@ -672,7 +676,7 @@
     }
 
     function updateBullets() {
-      // Player bullets update (modified for shotgun)
+      // Player bullets update (modified for shotgun and uzi)
       for (let i = player.bullets.length - 1; i >= 0; i--) {
         const bullet = player.bullets[i];
         bullet.x += bullet.dx;
@@ -1015,33 +1019,43 @@
 
     // Shooting with mouse click.
     canvas.addEventListener("click", (e) => {
-      // Determine angle from player to mouse
       const angle = Math.atan2(e.clientY - player.y, e.clientX - player.x);
       if (playerGun === "shotgun") {
         // Shotgun fires three bullets with a spread (middle, left, right)
-        const spread = 0.2; // adjust spread angle in radians (~11.5°)
-        // Middle bullet
+        const spread = 0.2;
         player.bullets.push({
           x: player.x,
           y: player.y,
           dx: Math.cos(angle) * 6.5,
           dy: Math.sin(angle) * 6.5
         });
-        // Left bullet
         player.bullets.push({
           x: player.x,
           y: player.y,
           dx: Math.cos(angle - spread) * 6.5,
           dy: Math.sin(angle - spread) * 6.5
         });
-        // Right bullet
         player.bullets.push({
           x: player.x,
           y: player.y,
           dx: Math.cos(angle + spread) * 6.5,
           dy: Math.sin(angle + spread) * 6.5
         });
-      } else { // rifle
+      } else if (playerGun === "uzi") {
+        // Uzi fires a burst of 5 bullets at 0.1s intervals.
+        for (let i = 0; i < 5; i++) {
+          setTimeout(() => {
+            let deviation = (Math.random() - 0.5) * 0.2; // deviation between -0.1 and 0.1 radians
+            let bulletAngle = angle + deviation;
+            player.bullets.push({
+              x: player.x,
+              y: player.y,
+              dx: Math.cos(bulletAngle) * 6.5,
+              dy: Math.sin(bulletAngle) * 6.5
+            });
+          }, i * 100);
+        }
+      } else { // Rifle (default)
         player.bullets.push({
           x: player.x,
           y: player.y,
@@ -1076,6 +1090,19 @@
             dx: Math.cos(angle + spread) * 6.5,
             dy: Math.sin(angle + spread) * 6.5
           });
+        } else if (playerGun === "uzi") {
+          for (let i = 0; i < 5; i++) {
+            setTimeout(() => {
+              let deviation = (Math.random() - 0.5) * 0.2;
+              let bulletAngle = angle + deviation;
+              player.bullets.push({
+                x: player.x,
+                y: player.y,
+                dx: Math.cos(bulletAngle) * 6.5,
+                dy: Math.sin(bulletAngle) * 6.5
+              });
+            }, i * 100);
+          }
         } else {
           player.bullets.push({
             x: player.x,
@@ -1191,8 +1218,9 @@
     // Called when a gun option is clicked in the gun shop
     function selectGun(gun) {
       if (gun === "shotgun") {
-        // Check if player has enough coins (300 coins required)
+        // Check if player has enough coins (300 currency points required)
         if (coinCount * 50 >= 300) {
+          // Deduct coins: 300/50 = 6 coins.
           coinCount -= 6;
           localStorage.setItem("coinCount", coinCount);
           updateCoinCounters();
@@ -1200,6 +1228,17 @@
           alert("Shotgun purchased and equipped!");
         } else {
           alert("Not enough coins for Shotgun!");
+        }
+      } else if (gun === "uzi") {
+        // Uzi costs 1000 currency points (i.e. 20 coins)
+        if (coinCount * 50 >= 1000) {
+          coinCount -= 20;
+          localStorage.setItem("coinCount", coinCount);
+          updateCoinCounters();
+          playerGun = "uzi";
+          alert("Uzi purchased and equipped!");
+        } else {
+          alert("Not enough coins for Uzi!");
         }
       } else if (gun === "rifle") {
         playerGun = "rifle";
