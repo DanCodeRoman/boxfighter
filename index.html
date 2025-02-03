@@ -1192,8 +1192,8 @@
     function selectGun(gun) {
       if (gun === "shotgun") {
         // Check if player has enough coins (300 coins required)
-        if (coinCount >= 300) {
-          coinCount -= 300;
+        if (coinCount * 50 >= 300) {
+          coinCount -= 6;
           localStorage.setItem("coinCount", coinCount);
           updateCoinCounters();
           playerGun = "shotgun";
