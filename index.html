@@ -142,30 +142,28 @@
       background-color: green;
       transition: width 0.3s;
     }
-    /* Boss Health Bar Styling */
+    /* Boss Health Bars Container */
     #bossHealthBarContainer {
       position: absolute;
       top: 10px;
       left: 50%;
       transform: translateX(-50%);
       width: 400px;
+      z-index: 15;
+      display: none;
+    }
+    .bossHealthBar {
       height: 30px;
+      background-color: darkred;
       border: 3px solid white;
       border-radius: 20px;
-      display: none;
-      z-index: 15;
-    }
-    #bossHealthBarInner {
-      height: 100%;
-      width: 100%;
-      background-color: darkred;
-      border-radius: 20px;
+      margin: 5px 0;
       transition: width 0.3s;
     }
+    /* Canvas */
     canvas {
       display: block;
       background-color: #2b5280;
-      /* Prevent default gestures to allow multi-touch */
       touch-action: none;
     }
     /* Game Over Screen Styling */
@@ -378,9 +376,10 @@
     </div>
     <p id="score" style="user-select: none;">Score: 0</p>
   </div>
-  <!-- Boss Health Bar -->
+  <!-- Boss Health Bars Container -->
   <div id="bossHealthBarContainer">
-    <div id="bossHealthBarInner"></div>
+    <div class="bossHealthBar" id="bossHealthBar1"></div>
+    <div class="bossHealthBar" id="bossHealthBar2" style="display:none;"></div>
   </div>
   <canvas id="gameCanvas"></canvas>
   <div id="roundMessage"></div>
@@ -406,7 +405,8 @@
     let gameLoopId;
     let gameStarted = false;
     let welcomeMessageTime = 0;
-    let boss = null;
+    let boss = null; // used in rounds < 10
+    // For round 10, bosses will be in the enemies array as type "boss"
     
     // Load owned guns from localStorage; default to ["rifle"]
     let ownedGuns = JSON.parse(localStorage.getItem("ownedGuns")) || ["rifle"];
@@ -476,30 +476,24 @@
     
     let baseGamma = null;
     let baseBeta = null;
-    const sensitivity = 0.2; // Lower values will make movement less drastic
+    const sensitivity = 0.2;
     
     function handleOrientation(event) {
-      // On the first event, calibrate the sensor (record baseline values)
       if (baseGamma === null || baseBeta === null) {
         baseGamma = event.gamma;
         baseBeta = event.beta;
-        return; // Skip movement on the first call while calibrating
+        return;
       }
-      // Calculate the relative tilt from the baseline
       const relativeGamma = event.gamma - baseGamma;
       const relativeBeta = event.beta - baseBeta;
-      // Apply the sensitivity factor to smooth out the movement
       player.x += relativeGamma * sensitivity;
       player.y += relativeBeta * sensitivity;
-      // Constrain player within the canvas.
       player.x = Math.max(player.size / 2, Math.min(canvas.width - player.size / 2, player.x));
       player.y = Math.max(player.size / 2, Math.min(canvas.height - player.size / 2, player.y));
     }
     
-    // Request device orientation for mobile (iOS 13+ requires permission)
     function enableAccelerometerControls() {
       if (window.DeviceOrientationEvent) {
-        // For iOS 13+ devices
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
           DeviceOrientationEvent.requestPermission()
             .then(permissionState => {
@@ -511,7 +505,6 @@
             })
             .catch(console.error);
         } else {
-          // Non-iOS 13+ devices that support deviceorientation
           window.addEventListener("deviceorientation", handleOrientation);
           accelerometerEnabled = true;
           console.log("Accelerometer enabled.");
@@ -519,15 +512,47 @@
       }
     }
     
-    // Only enable accelerometer controls on mobile devices.
     if (/Mobi|Android/i.test(navigator.userAgent)) {
       enableAccelerometerControls();
     }
     
-    // Pause game function: shows main menu, cancels the game loop, and pauses background music.
-    // Only allow pausing if the player is alive (i.e. Game Over screen is not active)
+    // Helper to generate a random spawn position away from the player.
+    function getRandomSpawnPosition(minDistance = 200) {
+      let x, y;
+      do {
+        x = Math.random() * canvas.width;
+        y = Math.random() * canvas.height;
+      } while (Math.hypot(x - player.x, y - player.y) < minDistance);
+      return { x, y };
+    }
+    
+    // Update boss health bars based on boss enemies in the game.
+    function updateBossHealthBars() {
+      const bossBarContainer = document.getElementById("bossHealthBarContainer");
+      // Get all boss enemies in the enemies array.
+      const bossEnemies = enemies.filter(e => e.type === "boss");
+      if (bossEnemies.length === 0) {
+        bossBarContainer.style.display = "none";
+      } else {
+        bossBarContainer.style.display = "block";
+        if (bossEnemies.length === 1) {
+          const bar1 = document.getElementById("bossHealthBar1");
+          bar1.style.width = (bossEnemies[0].hitsRemaining / 85 * 100) + "%";
+          bar1.style.display = "block";
+          document.getElementById("bossHealthBar2").style.display = "none";
+        } else if (bossEnemies.length === 2) {
+          const bar1 = document.getElementById("bossHealthBar1");
+          const bar2 = document.getElementById("bossHealthBar2");
+          bar1.style.width = (bossEnemies[0].hitsRemaining / 85 * 100) + "%";
+          bar2.style.width = (bossEnemies[1].hitsRemaining / 85 * 100) + "%";
+          bar1.style.display = "block";
+          bar2.style.display = "block";
+        }
+      }
+    }
+    
+    // Pause game function.
     function pauseGame() {
-      // Do not allow pause if game over screen is active
       if (document.getElementById("gameOverScreen").style.display !== "none") {
         return;
       }
@@ -536,7 +561,6 @@
         if (gameLoopId) {
           cancelAnimationFrame(gameLoopId);
         }
-        // Pause the background music
         document.getElementById("bgMusic").pause();
         document.getElementById("startMenu").style.display = "flex";
         document.getElementById("gameUI").style.display = "none";
@@ -544,18 +568,15 @@
       }
     }
     
-    // Modified startGame function to resume if paused or start fresh otherwise.
     function startGame() {
       if (paused) {
         paused = false;
         document.getElementById("startMenu").style.display = "none";
         document.getElementById("gameUI").style.display = "block";
-        // Resume the background music (it will continue from where it was paused)
         document.getElementById("bgMusic").play();
         gameLoop();
         return;
       }
-      
       if (gameLoopId) {
         cancelAnimationFrame(gameLoopId);
       }
@@ -579,11 +600,9 @@
           console.log("Device orientation enabled (no permission needed).");
         }
       }
-      // Restart the background music each time the game starts
       const bgMusic = document.getElementById("bgMusic");
       bgMusic.currentTime = 0;
       bgMusic.play();
-    
       colorPreview.style.backgroundColor = player.color;
       document.getElementById("startMenu").style.display = "none";
       document.getElementById("gameUI").style.display = "block";
@@ -620,7 +639,6 @@
       }
     }
     
-    // Spawn coins in a similar fashion to health boosts (rare)
     function spawnCoin() {
       if (Math.random() < 0.25) {
         coinsOnField.push({
@@ -662,7 +680,6 @@
           enemy.size
         );
         ctx.shadowBlur = 5;
-        // Draw enemy bullets for shooter and boss types
         if (enemy.type === "shooter" || enemy.type === "boss") {
           for (let bullet of enemy.bullets) {
             ctx.fillStyle = enemy.type === "boss" ? "purple" : "darkblue";
@@ -677,7 +694,6 @@
     }
     
     function updateBullets() {
-      // Update player bullets (handles shotgun and uzi differently)
       for (let i = player.bullets.length - 1; i >= 0; i--) {
         const bullet = player.bullets[i];
         bullet.x += bullet.dx;
@@ -691,7 +707,6 @@
           player.bullets.splice(i, 1);
         }
       }
-      // Update enemy bullets (for shooter and boss types)
       for (let i = 0; i < enemies.length; i++) {
         const enemy = enemies[i];
         if (enemy.type === "shooter" || enemy.type === "boss") {
@@ -751,8 +766,6 @@
       }
     }
     
-    // Update player based on keyboard input (for desktop).
-    // (On mobile, the deviceorientation event updates player.x and player.y directly.)
     function updatePlayer() {
       if (keys["w"] && player.y - player.size / 2 > 0) player.y -= 5;
       if (keys["s"] && player.y + player.size / 2 < canvas.height) player.y += 5;
@@ -760,7 +773,6 @@
       if (keys["d"] && player.x + player.size / 2 < canvas.width) player.x += 5;
     }
     
-    // Update enemies – including our new clone enemy type.
     function updateEnemies() {
       for (let i = enemies.length - 1; i >= 0; i--) {
         const enemy = enemies[i];
@@ -813,7 +825,6 @@
       enemy.bullets.push(bullet);
     }
     
-    // Check collisions between player bullets and enemies.
     function checkBulletCollisions() {
       for (let i = player.bullets.length - 1; i >= 0; i--) {
         const bullet = player.bullets[i];
@@ -833,15 +844,12 @@
             } else if (enemy.type === "boss") {
               enemy.hitsRemaining--;
               player.bullets.splice(i, 1);
-              const bossBar = document.getElementById("bossHealthBarInner");
-              bossBar.style.width = (enemy.hitsRemaining / 85) * 100 + "%";
+              // The boss health bars are updated in updateBossHealthBars()
               if (enemy.hitsRemaining <= 0) {
                 score += 50;
                 clearInterval(enemy.continuousShootInterval);
                 clearInterval(enemy.circleShootInterval);
                 enemies.splice(j, 1);
-                boss = null;
-                document.getElementById("bossHealthBarContainer").style.display = "none";
               }
               break;
             } else if (enemy.type === "clone") {
@@ -969,18 +977,44 @@
     
       if (timestamp - lastEnemySpawn > 15000) {
         lastEnemySpawn = timestamp;
-        if (roundNumber > 5 && Math.random() < 0.3) {
-          enemies.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            type: "clone",
-            size: 40,
-            color: "white",
-            speed: 2.0,
-            canClone: true,
-            isSplitting: false
-          });
+        // At round 10, spawn 2 boss enemies at positions away from the player.
+        if (roundNumber === 10) {
+          for (let i = 0; i < 2; i++) {
+            const pos = getRandomSpawnPosition(200);
+            enemies.push({
+              x: pos.x,
+              y: pos.y,
+              type: "boss",
+              size: 120,
+              color: "darkred",
+              speed: 2.35,
+              hitsRemaining: 85,
+              bullets: []
+            });
+          }
+        }
+        // Otherwise, if roundNumber > 10 and bosses exist, normal boss logic applies.
+        else if (roundNumber % 5 === 0) {
+          roundMessage = "Boss Incoming";
+          roundMessageTime = timestamp + 5000;
+          setTimeout(() => {
+            // Only spawn a boss if there isn’t one already (for rounds like 5, 15, etc.)
+            if (!enemies.some(e => e.type === "boss")) {
+              // Spawn one boss at center.
+              enemies.push({
+                x: canvas.width / 2,
+                y: canvas.height / 4,
+                type: "boss",
+                size: 120,
+                color: "darkred",
+                speed: 2.35,
+                hitsRemaining: 85,
+                bullets: []
+              });
+            }
+          }, 5000);
         } else {
+          // Spawn normal enemies.
           let numberOfEnemies = 6 + roundNumber - 1;
           for (let i = 0; i < numberOfEnemies; i++) {
             let r = Math.random();
@@ -1019,13 +1053,12 @@
           }
         }
         roundNumber++;
-        if (roundNumber % 5 === 0) {
+        if (roundNumber % 5 === 0 && roundNumber !== 10) {
           roundMessage = "Boss Incoming";
           roundMessageTime = timestamp + 5000;
           setTimeout(() => {
-            if (!boss) {
-              enemies = [];
-              boss = {
+            if (!enemies.some(e => e.type === "boss")) {
+              enemies.push({
                 x: canvas.width / 2,
                 y: canvas.height / 4,
                 type: "boss",
@@ -1034,43 +1067,10 @@
                 speed: 2.35,
                 hitsRemaining: 85,
                 bullets: []
-              };
-              enemies.push(boss);
-              const bossBar = document.getElementById("bossHealthBarInner");
-              bossBar.style.width = "100%";
-              document.getElementById("bossHealthBarContainer").style.display = "block";
-    
-              boss.continuousShootInterval = setInterval(() => {
-                const angle = Math.atan2(player.y - boss.y, player.x - boss.x);
-                const bullet = {
-                  x: boss.x,
-                  y: boss.y,
-                  dx: Math.cos(angle) * 4,
-                  dy: Math.sin(angle) * 4,
-                  size: 8,
-                  color: "purple"
-                };
-                boss.bullets.push(bullet);
-              }, 1000);
-    
-              boss.circleShootInterval = setInterval(() => {
-                const numBullets = 12;
-                for (let i = 0; i < numBullets; i++) {
-                  const angle = (i * 2 * Math.PI) / numBullets;
-                  const bullet = {
-                    x: boss.x,
-                    y: boss.y,
-                    dx: Math.cos(angle) * 2,
-                    dy: Math.sin(angle) * 2,
-                    size: 6,
-                    color: "blue"
-                  };
-                  boss.bullets.push(bullet);
-                }
-              }, 5000);
+              });
             }
           }, 5000);
-        } else {
+        } else if (roundNumber % 5 !== 0) {
           roundMessage = "Wave " + roundNumber;
           roundMessageTime = timestamp + 5000;
           setTimeout(() => {
@@ -1100,6 +1100,7 @@
       checkHealthBoostCollisions();
       checkCoinCollisions();
       updateHealthBar();
+      updateBossHealthBars();
     
       drawPlayer();
       drawEnemies();
@@ -1115,14 +1116,12 @@
     window.addEventListener("keydown", (e) => (keys[e.key] = true));
     window.addEventListener("keyup", (e) => (keys[e.key] = false));
     
-    // Listen for Escape key to pause the game (only when the player is actively in-game)
     document.addEventListener("keydown", function(e) {
       if (e.key === "Escape") {
         pauseGame();
       }
     });
     
-    // Shooting with mouse click.
     canvas.addEventListener("click", (e) => {
       playShootSound();
       const angle = Math.atan2(e.clientY - player.y, e.clientX - player.x);
@@ -1169,7 +1168,6 @@
       }
     });
     
-    // Shooting with touch (multi-touch supported).
     canvas.addEventListener("touchstart", (e) => {
       e.preventDefault();
       playShootSound();
@@ -1298,7 +1296,6 @@
     
     displayLeaderboard();
     
-    // Function to toggle the music on/off.
     function toggleMusic() {
       const bgMusic = document.getElementById("bgMusic");
       const muteButton = document.getElementById("muteButton");
@@ -1320,8 +1317,6 @@
       document.getElementById("gunShopModal").style.display = "none";
     }
     
-    // Called when a gun option is clicked in the gun shop.
-    // If the gun is already owned, simply equip it. Otherwise, purchase it.
     function selectGun(gun) {
       if (gun === "rifle") {
         playerGun = "rifle";
@@ -1333,7 +1328,7 @@
         } else {
           if (gun === "shotgun") {
             if (coinCount * 50 >= 300) {
-              coinCount -= 6; // (300 / 50)
+              coinCount -= 6;
               localStorage.setItem("coinCount", coinCount);
               updateCoinCounters();
               playerGun = "shotgun";
@@ -1345,7 +1340,7 @@
             }
           } else if (gun === "uzi") {
             if (coinCount * 50 >= 1000) {
-              coinCount -= 20; // (1000 / 50)
+              coinCount -= 20;
               localStorage.setItem("coinCount", coinCount);
               updateCoinCounters();
               playerGun = "uzi";
