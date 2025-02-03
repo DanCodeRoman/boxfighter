@@ -448,8 +448,10 @@
     let gameStarted = false;
     let welcomeMessageTime = 0;
     let boss = null;
-    let ownedGuns = ["rifle"]; // The player always has the rifle.
     
+    // Load owned guns from localStorage; default to ["rifle"]
+    let ownedGuns = JSON.parse(localStorage.getItem("ownedGuns")) || ["rifle"];
+
     // Gun selection: default "rifle" (one bullet per shot)
     let playerGun = "rifle";
 
@@ -1253,13 +1255,16 @@
     // Called when a gun option is clicked in the gun shop
     function selectGun(gun) {
       if (gun === "rifle") {
+        // Rifle is free and always owned.
         playerGun = "rifle";
         alert("Rifle equipped!");
       } else {
+        // Check if the gun is already owned by looking in the ownedGuns array.
         if (ownedGuns.includes(gun)) {
           playerGun = gun;
           alert(gun.charAt(0).toUpperCase() + gun.slice(1) + " equipped!");
         } else {
+          // If not owned, check for sufficient coins and purchase.
           if (gun === "shotgun") {
             if (coinCount * 50 >= 300) {
               coinCount -= 6; // (300 / 50)
@@ -1267,6 +1272,8 @@
               updateCoinCounters();
               playerGun = "shotgun";
               ownedGuns.push("shotgun");
+              // Save the updated ownedGuns array in localStorage.
+              localStorage.setItem("ownedGuns", JSON.stringify(ownedGuns));
               alert("Shotgun purchased and equipped!");
             } else {
               alert("Not enough coins for Shotgun!");
@@ -1278,6 +1285,7 @@
               updateCoinCounters();
               playerGun = "uzi";
               ownedGuns.push("uzi");
+              localStorage.setItem("ownedGuns", JSON.stringify(ownedGuns));
               alert("Uzi purchased and equipped!");
             } else {
               alert("Not enough coins for Uzi!");
