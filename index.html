@@ -889,9 +889,9 @@
       const aimedBullet = {
         x: enemy.x,
         y: enemy.y,
-        dx: Math.cos(angle) * 5,
-        dy: Math.sin(angle) * 5,
-        size: 5,
+        dx: Math.cos(angle) * 6,
+        dy: Math.sin(angle) * 6,
+        size: 10,
         color: "purple"
       };
       enemy.bullets.push(aimedBullet);
@@ -914,14 +914,46 @@
     
     // When a boss enemy is created, initialize its shooting.
     function initBoss(enemy) {
-      enemy.shootInterval = setInterval(() => {
-        // Only shoot if still alive.
-        if (enemies.indexOf(enemy) !== -1) {
-          bossShoot(enemy);
-        } else {
-          clearInterval(enemy.shootInterval);
-        }
-      }, 3000);
+      // Aimed shot interval (fire faster, e.g., every 1500ms)
+enemy.aimedShootInterval = setInterval(() => {
+  if (enemies.indexOf(enemy) !== -1) {
+    // Fire aimed bullet at the player
+    const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+    const aimedBullet = {
+      x: enemy.x,
+      y: enemy.y,
+      dx: Math.cos(angle) * 5,
+      dy: Math.sin(angle) * 5,
+      size: 5,
+      color: "purple"
+    };
+    enemy.bullets.push(aimedBullet);
+  } else {
+    clearInterval(enemy.aimedShootInterval);
+  }
+}, 1500);
+
+// Ring shot interval remains at 3000ms
+enemy.ringShootInterval = setInterval(() => {
+  if (enemies.indexOf(enemy) !== -1) {
+    const bulletCount = 12;
+    const bulletSpeed = 4;
+    for (let i = 0; i < bulletCount; i++) {
+      const ringAngle = (2 * Math.PI * i) / bulletCount;
+      const ringBullet = {
+        x: enemy.x,
+        y: enemy.y,
+        dx: Math.cos(ringAngle) * bulletSpeed,
+        dy: Math.sin(ringAngle) * bulletSpeed,
+        size: 5,
+        color: "purple"
+      };
+      enemy.bullets.push(ringBullet);
+    }
+  } else {
+    clearInterval(enemy.ringShootInterval);
+  }
+}, 3000);
     }
     
     function checkBulletCollisions() {
