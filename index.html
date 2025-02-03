@@ -559,7 +559,12 @@
     }
 
     // Pause game function: shows main menu, cancels the game loop, and pauses background music.
+    // Only allow pausing if the player is alive (i.e. Game Over screen is not active)
     function pauseGame() {
+      // Do not allow pause if game over screen is active
+      if (document.getElementById("gameOverScreen").style.display !== "none") {
+        return;
+      }
       if (!paused) {
         paused = true;
         if (gameLoopId) {
@@ -569,7 +574,6 @@
         document.getElementById("bgMusic").pause();
         document.getElementById("startMenu").style.display = "flex";
         document.getElementById("gameUI").style.display = "none";
-        document.getElementById("gameOverScreen").style.display = "none";
         console.log("Game paused");
       }
     }
@@ -1043,7 +1047,7 @@
     window.addEventListener("keydown", (e) => (keys[e.key] = true));
     window.addEventListener("keyup", (e) => (keys[e.key] = false));
 
-    // Listen for Escape key to pause the game (works during gameplay or on game over)
+    // Listen for Escape key to pause the game (only when the player is actively in-game)
     document.addEventListener("keydown", function(e) {
       if (e.key === "Escape") {
         pauseGame();
