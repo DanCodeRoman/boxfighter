@@ -4,12 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Box Fighter</title>
+  <!-- Importing a modern, appealing font -->
+  <link href="https://fonts.googleapis.com/css?family=Poppins:400,600&display=swap" rel="stylesheet">
   <style>
     body,
     html {
       margin: 0;
       overflow: hidden;
-      font-family: Arial, sans-serif;
+      font-family: 'Poppins', sans-serif;
       height: 100%;
       background-color: #1e1e1e;
     }
@@ -154,10 +156,11 @@
       margin: 5px 0;
       transition: width 0.3s;
     }
-    /* Canvas */
+    /* Canvas: Updated to use a full-screen background image */
     canvas {
       display: block;
-      background-color: #2b5280;
+      background: url('https://postimg.cc/5Y0vS6j5') no-repeat center center fixed;
+      background-size: cover;
       touch-action: none;
     }
     /* Game Over Screen Styling */
@@ -254,18 +257,23 @@
       background-color: rgba(0, 0, 0, 0.3);
       border-radius: 5px;
     }
+    /* Updated Welcome / Wave / Boss Message Styling */
     #roundMessage {
       position: absolute;
       top: 20%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: 20px;
+      font-size: 24px;
+      font-weight: 600;
       color: black;
+      background: white;
+      border: 2px solid white;
+      border-radius: 15px;
+      padding: 10px 20px;
       z-index: 50;
       opacity: 0;
       transition: opacity 0.5s ease-in-out;
       user-select: none;
-      font-family: "Lucida Console", "Courier New", monospace;
     }
     /* Gun Shop Modal Styles */
     #gunShopModal {
@@ -915,45 +923,45 @@
     // When a boss enemy is created, initialize its shooting.
     function initBoss(enemy) {
       // Aimed shot interval (fire faster, e.g., every 1500ms)
-enemy.aimedShootInterval = setInterval(() => {
-  if (enemies.indexOf(enemy) !== -1) {
-    // Fire aimed bullet at the player
-    const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-    const aimedBullet = {
-      x: enemy.x,
-      y: enemy.y,
-      dx: Math.cos(angle) * 5,
-      dy: Math.sin(angle) * 5,
-      size: 5,
-      color: "purple"
-    };
-    enemy.bullets.push(aimedBullet);
-  } else {
-    clearInterval(enemy.aimedShootInterval);
-  }
-}, 1500);
-
-// Ring shot interval remains at 3000ms
-enemy.ringShootInterval = setInterval(() => {
-  if (enemies.indexOf(enemy) !== -1) {
-    const bulletCount = 12;
-    const bulletSpeed = 4;
-    for (let i = 0; i < bulletCount; i++) {
-      const ringAngle = (2 * Math.PI * i) / bulletCount;
-      const ringBullet = {
-        x: enemy.x,
-        y: enemy.y,
-        dx: Math.cos(ringAngle) * bulletSpeed,
-        dy: Math.sin(ringAngle) * bulletSpeed,
-        size: 5,
-        color: "purple"
-      };
-      enemy.bullets.push(ringBullet);
-    }
-  } else {
-    clearInterval(enemy.ringShootInterval);
-  }
-}, 3000);
+      enemy.aimedShootInterval = setInterval(() => {
+        if (enemies.indexOf(enemy) !== -1) {
+          // Fire aimed bullet at the player
+          const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+          const aimedBullet = {
+            x: enemy.x,
+            y: enemy.y,
+            dx: Math.cos(angle) * 5,
+            dy: Math.sin(angle) * 5,
+            size: 5,
+            color: "purple"
+          };
+          enemy.bullets.push(aimedBullet);
+        } else {
+          clearInterval(enemy.aimedShootInterval);
+        }
+      }, 1500);
+    
+      // Ring shot interval remains at 3000ms
+      enemy.ringShootInterval = setInterval(() => {
+        if (enemies.indexOf(enemy) !== -1) {
+          const bulletCount = 12;
+          const bulletSpeed = 4;
+          for (let i = 0; i < bulletCount; i++) {
+            const ringAngle = (2 * Math.PI * i) / bulletCount;
+            const ringBullet = {
+              x: enemy.x,
+              y: enemy.y,
+              dx: Math.cos(ringAngle) * bulletSpeed,
+              dy: Math.sin(ringAngle) * bulletSpeed,
+              size: 5,
+              color: "purple"
+            };
+            enemy.bullets.push(ringBullet);
+          }
+        } else {
+          clearInterval(enemy.ringShootInterval);
+        }
+      }, 3000);
     }
     
     function checkBulletCollisions() {
