@@ -478,9 +478,6 @@
       const soundClone = enemyKillSound.cloneNode();
       soundClone.volume = 1.0;
       soundClone.play().then(() => {
-        console.log("Enemy kill sound played");
-      }).catch(err => {
-        console.error("Error playing enemy kill sound:", err);
       });
     }
     
