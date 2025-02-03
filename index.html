@@ -321,6 +321,8 @@
   <audio id="bgMusic" src="music.mp3" loop preload="auto"></audio>
   <!-- Enemy kill sound (will be cloned to allow overlapping) -->
   <audio id="enemyKillSound" src="enemy-kill.mp3" preload="auto"></audio>
+  <!-- New shoot sound element -->
+  <audio id="shootSound" src="shoot.mp3" preload="auto"></audio>
   <!-- Mute Music Button -->
   <button id="muteButton" onclick="toggleMusic()">Mute Music</button>
   <!-- Main Menu Screen -->
@@ -462,6 +464,14 @@
       }).catch(err => {
         console.error("Error playing enemy kill sound:", err);
       });
+    }
+    
+    // Create shoot sound helper.
+    const shootSound = document.getElementById("shootSound");
+    function playShootSound() {
+      const soundClone = shootSound.cloneNode();
+      soundClone.volume = 1.0;
+      soundClone.play().catch(err => console.error("Error playing shoot sound:", err));
     }
     
     let baseGamma = null;
@@ -754,10 +764,8 @@
     function updateEnemies() {
       for (let i = enemies.length - 1; i >= 0; i--) {
         const enemy = enemies[i];
-        // Handle Clone enemy separately
         if (enemy.type === "clone") {
           if (enemy.isSplitting) {
-            // While splitting, use its initial velocity.
             enemy.x += enemy.dx;
             enemy.y += enemy.dy;
             if (performance.now() >= enemy.splitTime) {
@@ -766,18 +774,15 @@
               enemy.dy = 0;
             }
           } else {
-            // After splitting, follow the player.
             const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
             enemy.x += Math.cos(angle) * enemy.speed;
             enemy.y += Math.sin(angle) * enemy.speed;
           }
         } else {
-          // For other enemy types, follow the player.
           const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
           enemy.x += Math.cos(angle) * enemy.speed;
           enemy.y += Math.sin(angle) * enemy.speed;
         }
-        // Collision with player: if enemy touches player, damage player.
         if (
           Math.hypot(player.x - enemy.x, player.y - enemy.y) <
           (player.size + enemy.size) / 2
@@ -792,7 +797,6 @@
             return;
           }
         }
-        // Also update enemy bullets for shooter and boss types (handled in drawEnemies)
       }
     }
     
@@ -816,7 +820,6 @@
         for (let j = enemies.length - 1; j >= 0; j--) {
           const enemy = enemies[j];
           if (Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y) < 20) {
-            // Handle tank enemy (requires multiple hits)
             if (enemy.type === "tank") {
               enemy.hitsRemaining--;
               player.bullets.splice(i, 1);
@@ -827,9 +830,7 @@
                 playEnemyKillSound();
               }
               break;
-            }
-            // Handle boss enemy (multiple hits)
-            else if (enemy.type === "boss") {
+            } else if (enemy.type === "boss") {
               enemy.hitsRemaining--;
               player.bullets.splice(i, 1);
               const bossBar = document.getElementById("bossHealthBarInner");
@@ -843,12 +844,8 @@
                 document.getElementById("bossHealthBarContainer").style.display = "none";
               }
               break;
-            }
-            // Handle clone enemy (new enemy type)
-            else if (enemy.type === "clone") {
-              // If this clone can still split (i.e. has not cloned yet)
+            } else if (enemy.type === "clone") {
               if (enemy.canClone) {
-                // Spawn two new clones with half the size.
                 const baseAngle = Math.random() * 2 * Math.PI;
                 const splitSpeed = 5;
                 const currentTime = performance.now();
@@ -859,7 +856,7 @@
                   size: enemy.size / 2,
                   color: enemy.color,
                   speed: enemy.speed,
-                  canClone: false,    // They should not split further.
+                  canClone: false,
                   isSplitting: true,
                   splitTime: currentTime + 1000,
                   dx: Math.cos(baseAngle + 0.3) * splitSpeed,
@@ -878,7 +875,6 @@
                   dx: Math.cos(baseAngle - 0.3) * splitSpeed,
                   dy: Math.sin(baseAngle - 0.3) * splitSpeed
                 };
-                // Remove the original clone and add the two new clones.
                 enemies.splice(j, 1);
                 enemies.push(clone1);
                 enemies.push(clone2);
@@ -888,7 +884,6 @@
                 playEnemyKillSound();
                 break;
               } else {
-                // If clone already split, just remove it.
                 score += 15;
                 health = Math.min(100, health + 5);
                 player.bullets.splice(i, 1);
@@ -896,9 +891,7 @@
                 playEnemyKillSound();
                 break;
               }
-            }
-            // Handle other enemy types (melee and shooter) – killed in one shot.
-            else {
+            } else {
               score += 15;
               health = Math.min(100, health + 5);
               player.bullets.splice(i, 1);
@@ -909,7 +902,6 @@
           }
         }
       }
-      // Also check for collisions between enemy bullets and the player.
       for (let i = 0; i < enemies.length; i++) {
         const enemy = enemies[i];
         if (enemy.type === "shooter" || enemy.type === "boss") {
@@ -977,21 +969,18 @@
     
       if (timestamp - lastEnemySpawn > 15000) {
         lastEnemySpawn = timestamp;
-        // After round 5 (i.e. roundNumber > 5), include a 30% chance to spawn a clone enemy.
         if (roundNumber > 5 && Math.random() < 0.3) {
-          // Spawn a clone enemy.
           enemies.push({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
             type: "clone",
-            size: 40,              // Same as shooter enemy initially.
+            size: 40,
             color: "white",
             speed: 2.0,
-            canClone: true,        // This clone can split once.
+            canClone: true,
             isSplitting: false
           });
         } else {
-          // Otherwise, spawn the usual enemies.
           let numberOfEnemies = 6 + roundNumber - 1;
           for (let i = 0; i < numberOfEnemies; i++) {
             let r = Math.random();
@@ -1021,7 +1010,7 @@
               enemy.color = "yellow";
               enemy.speed = 1.25;
               enemy.hitsRemaining = 5;
-            } else { // melee
+            } else {
               enemy.size = 30;
               enemy.color = "red";
               enemy.speed = 2.35;
@@ -1030,7 +1019,6 @@
           }
         }
         roundNumber++;
-        // Set a round message.
         if (roundNumber % 5 === 0) {
           roundMessage = "Boss Incoming";
           roundMessageTime = timestamp + 5000;
@@ -1136,6 +1124,7 @@
     
     // Shooting with mouse click.
     canvas.addEventListener("click", (e) => {
+      playShootSound();
       const angle = Math.atan2(e.clientY - player.y, e.clientX - player.x);
       if (playerGun === "shotgun") {
         const spread = 0.2;
@@ -1183,6 +1172,7 @@
     // Shooting with touch (multi-touch supported).
     canvas.addEventListener("touchstart", (e) => {
       e.preventDefault();
+      playShootSound();
       for (let touch of e.changedTouches) {
         const angle = Math.atan2(touch.clientY - player.y, touch.clientX - player.x);
         if (playerGun === "shotgun") {
