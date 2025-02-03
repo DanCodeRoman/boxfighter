@@ -450,6 +450,8 @@
     let gameStarted = false;
     let welcomeMessageTime = 0;
     let boss = null;
+    let ownedGuns = ["rifle"]; // The player always has the rifle.
+
     
     // Gun selection: default "rifle" (one bullet per shot)
     let playerGun = "rifle";
@@ -1217,35 +1219,46 @@
     
     // Called when a gun option is clicked in the gun shop
     function selectGun(gun) {
+  if (gun === "rifle") {
+    // Rifle is free and always owned.
+    playerGun = "rifle";
+    alert("Rifle equipped!");
+  } else {
+    // For other guns, check if the player already owns it.
+    if (ownedGuns.includes(gun)) {
+      // If already owned, just equip it without reducing coins.
+      playerGun = gun;
+      alert(gun.charAt(0).toUpperCase() + gun.slice(1) + " equipped!");
+    } else {
+      // If not owned, then check for sufficient coins and purchase.
       if (gun === "shotgun") {
-        // Check if player has enough coins (300 currency points required)
         if (coinCount * 50 >= 300) {
-          // Deduct coins: 300/50 = 6 coins.
-          coinCount -= 6;
+          coinCount -= 6; // (300 / 50)
           localStorage.setItem("coinCount", coinCount);
           updateCoinCounters();
           playerGun = "shotgun";
+          ownedGuns.push("shotgun");
           alert("Shotgun purchased and equipped!");
         } else {
           alert("Not enough coins for Shotgun!");
         }
       } else if (gun === "uzi") {
-        // Uzi costs 1000 currency points (i.e. 20 coins)
         if (coinCount * 50 >= 1000) {
-          coinCount -= 20;
+          coinCount -= 20; // (1000 / 50)
           localStorage.setItem("coinCount", coinCount);
           updateCoinCounters();
           playerGun = "uzi";
+          ownedGuns.push("uzi");
           alert("Uzi purchased and equipped!");
         } else {
           alert("Not enough coins for Uzi!");
         }
-      } else if (gun === "rifle") {
-        playerGun = "rifle";
-        alert("Rifle equipped!");
       }
-      closeGunShop();
     }
+  }
+  closeGunShop();
+}
+
   </script>
 </body>
 </html>
