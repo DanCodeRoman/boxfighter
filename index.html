@@ -30,6 +30,52 @@
       z-index: 100;
       user-select: none;
     }
+    
+    /* Studios text styling */
+    #studiosText {
+      font-size: 24px;
+      background: linear-gradient(45deg, #ff6b6b, #ffcd3c, #6b94ff, #6bffb8);
+      -webkit-background-clip: text;
+      color: transparent;
+      animation: gradient-text 4s linear infinite;
+      margin-bottom: 20px;
+    }
+    
+    /* Coin counter for main menu (top right) */
+    #menuCoinCounter {
+      position: absolute;
+      top: 50px;
+      right: 10px;
+      border: 2px solid gold;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 18px;
+      background: rgba(0, 0, 0, 0.5);
+      color: gold;
+      z-index: 110;
+    }
+    
+    /* Gun Shop Button (Main Menu) */
+    #menuGunShopButton {
+      font-size: 20px;
+      padding: 10px 20px;
+      background-color: #344;
+      border: 2px solid white;
+      color: white;
+      cursor: pointer;
+      border-radius: 50px;
+      transition: transform 0.5s ease, background-color 0.5s ease;
+      margin-top: 15px;
+    }
+    
+    #menuGunShopButton:hover {
+      background-color: #ff6b6b;
+      transform: scale(1.2);
+    }
+    
+    #menuGunShopButton:active {
+      transform: scale(1.05);
+    }
 
     /* Animated Title (Box Fighter) */
     h1 {
@@ -140,6 +186,7 @@
       touch-action: none;
     }
 
+    /* Game Over Screen Styling */
     #gameOverScreen {
       position: absolute;
       top: 0;
@@ -155,6 +202,39 @@
       z-index: 100;
       display: none;
       user-select: none;
+    }
+    
+    /* Gun Shop Button for Game Over Screen */
+    #gameOverGunShopButton {
+      font-size: 20px;
+      padding: 10px 20px;
+      background-color: #344;
+      border: 2px solid white;
+      color: white;
+      cursor: pointer;
+      border-radius: 50px;
+      transition: transform 0.5s ease, background-color 0.5s ease;
+      margin-top: 15px;
+    }
+    
+    #gameOverGunShopButton:hover {
+      background-color: #ff6b6b;
+      transform: scale(1.2);
+    }
+    
+    #gameOverGunShopButton:active {
+      transform: scale(1.05);
+    }
+    
+    /* Coin Counter for Game Over Screen */
+    #gameOverCoinCounter {
+      border: 2px solid gold;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 18px;
+      background: rgba(0, 0, 0, 0.5);
+      color: gold;
+      margin: 10px 0;
     }
 
     #colorPickerContainer {
@@ -226,11 +306,51 @@
       user-select: none;
       font-family: "Lucida Console", "Courier New", monospace;
     }
-
-    /* Hide the on-screen joystick for mobile since we’re using accelerometer controls */
-    #joystickContainer {
+    
+    /* Gun Shop Modal Styles */
+    #gunShopModal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #222;
+      border: 3px solid white;
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 200;
       display: none;
+      color: white;
+      text-align: center;
+      width: 300px;
     }
+    
+    #gunShopModal h2 {
+      margin-top: 0;
+    }
+    
+    .gunOption {
+      border: 2px solid white;
+      border-radius: 8px;
+      padding: 10px;
+      margin: 10px 0;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    
+    .gunOption:hover {
+      background: #444;
+    }
+    
+    #closeGunShop {
+      margin-top: 15px;
+      padding: 5px 10px;
+      border: none;
+      background: #ff6b6b;
+      color: white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    
   </style>
 </head>
 <body>
@@ -243,9 +363,16 @@
   <!-- Mute Music Button -->
   <button id="muteButton" onclick="toggleMusic()">Mute Music</button>
 
+  <!-- Main Menu Screen -->
   <div id="startMenu">
+    <!-- Coin Counter (Main Menu) -->
+    <div id="menuCoinCounter">Coins: 0</div>
     <h1>Box Fighter</h1>
+    <!-- Studios Text -->
+    <div id="studiosText">DanCodeRoman Studios</div>
     <button onclick="startGame()">Ready Up</button>
+    <!-- Gun Shop Button (Main Menu) -->
+    <button id="menuGunShopButton" onclick="openGunShop()">Gun Shop</button>
     <div id="colorPickerContainer">
       <label for="playerColor">Change Agent:</label>
       <input type="color" id="playerColor" value="#39ff14" />
@@ -253,15 +380,35 @@
     </div>
   </div>
 
+  <!-- Game Over Screen -->
   <div id="gameOverScreen">
     <h1>Game Over</h1>
+    <!-- Coin Counter (Game Over) -->
+    <div id="gameOverCoinCounter">Coins: 0</div>
     <p id="finalScore">Final Score: 0</p>
     <div id="leaderboard">
       <h2>Top Scores</h2>
       <ol id="leaderboardList"></ol>
     </div>
     <button onclick="restartGame()">Restart</button>
+    <!-- Gun Shop Button (Game Over) -->
+    <button id="gameOverGunShopButton" onclick="openGunShop()">Gun Shop</button>
   </div>
+  
+  <!-- Gun Shop Modal -->
+  <div id="gunShopModal">
+    <h2>Gun Shop</h2>
+    <div class="gunOption" onclick="selectGun('rifle')">
+      <strong>Rifle</strong><br>
+      (Free) - Default single shot.
+    </div>
+    <div class="gunOption" onclick="selectGun('shotgun')">
+      <strong>Shotgun</strong><br>
+      (300 Coins) - 3-shot spread.
+    </div>
+    <button id="closeGunShop" onclick="closeGunShop()">Close</button>
+  </div>
+
   <div id="gameUI" style="display: none;">
     <div id="healthBar">
       <div id="healthBarInner"></div>
@@ -290,6 +437,7 @@
     let score = 0;
     let enemies = [];
     let healthBoosts = [];
+    let coinsOnField = [];
     let lastEnemySpawn = 0;
     let roundNumber = 1;
     let roundMessage = "";
@@ -298,6 +446,21 @@
     let gameStarted = false;
     let welcomeMessageTime = 0;
     let boss = null;
+    
+    // Gun selection: default "rifle" (one bullet per shot)
+    let playerGun = "rifle";
+
+    // Load persistent coin count from localStorage or initialize to 0
+    let coinCount = parseInt(localStorage.getItem("coinCount")) || 0;
+    
+    // Update coin counter displays
+    function updateCoinCounters() {
+      const menuCounter = document.getElementById("menuCoinCounter");
+      const gameOverCounter = document.getElementById("gameOverCoinCounter");
+      menuCounter.textContent = `Coins: ${coinCount * 50}`;
+      gameOverCounter.textContent = `Coins: ${coinCount * 50}`;
+    }
+    updateCoinCounters();
 
     const player = {
       x: canvas.width / 2,
@@ -321,6 +484,7 @@
     colorPicker.addEventListener("input", (e) => {
       player.color = e.target.value;
       colorPreview.style.backgroundColor = e.target.value;
+      ctx.shadowColor = e.target.value;
     });
 
     // Create enemy kill sound helper.
@@ -334,26 +498,27 @@
         console.error("Error playing enemy kill sound:", err);
       });
     }
-let baseGamma = null;
-let baseBeta = null;
-const sensitivity = 0.2; // Lower values will make movement less drastic
 
-function handleOrientation(event) {
-  // On the first event, calibrate the sensor (record baseline values)
-  if (baseGamma === null || baseBeta === null) {
-    baseGamma = event.gamma;
-    baseBeta = event.beta;
-    return; // Skip movement on the first call while calibrating
-  }
-  
-  // Calculate the relative tilt from the baseline
-  const relativeGamma = event.gamma - baseGamma;
-  const relativeBeta = event.beta - baseBeta;
-  
-  // Apply the sensitivity factor to smooth out the movement
-  player.x += relativeGamma * sensitivity;
-  player.y += relativeBeta * sensitivity;
+    let baseGamma = null;
+    let baseBeta = null;
+    const sensitivity = 0.2; // Lower values will make movement less drastic
+
+    function handleOrientation(event) {
+      // On the first event, calibrate the sensor (record baseline values)
+      if (baseGamma === null || baseBeta === null) {
+        baseGamma = event.gamma;
+        baseBeta = event.beta;
+        return; // Skip movement on the first call while calibrating
+      }
       
+      // Calculate the relative tilt from the baseline
+      const relativeGamma = event.gamma - baseGamma;
+      const relativeBeta = event.beta - baseBeta;
+      
+      // Apply the sensitivity factor to smooth out the movement
+      player.x += relativeGamma * sensitivity;
+      player.y += relativeBeta * sensitivity;
+          
       // Constrain player within the canvas.
       player.x = Math.max(player.size / 2, Math.min(canvas.width - player.size / 2, player.x));
       player.y = Math.max(player.size / 2, Math.min(canvas.height - player.size / 2, player.y));
@@ -392,26 +557,26 @@ function handleOrientation(event) {
         cancelAnimationFrame(gameLoopId);
       }
       if (/Mobi|Android/i.test(navigator.userAgent)) {
-    if (typeof DeviceOrientationEvent !== "undefined" &&
-        typeof DeviceOrientationEvent.requestPermission === "function") {
-      DeviceOrientationEvent.requestPermission()
-        .then(permissionState => {
-          if (permissionState === "granted") {
-            window.addEventListener("deviceorientation", handleOrientation);
-            accelerometerEnabled = true;
-            console.log("Device orientation permission granted.");
-          } else {
-            console.log("Device orientation permission denied.");
-          }
-        })
-        .catch(console.error);
-    } else {
-      // For non-iOS 13+ devices, simply add the listener.
-      window.addEventListener("deviceorientation", handleOrientation);
-      accelerometerEnabled = true;
-      console.log("Device orientation enabled (no permission needed).");
-    }
-  }
+        if (typeof DeviceOrientationEvent !== "undefined" &&
+            typeof DeviceOrientationEvent.requestPermission === "function") {
+          DeviceOrientationEvent.requestPermission()
+            .then(permissionState => {
+              if (permissionState === "granted") {
+                window.addEventListener("deviceorientation", handleOrientation);
+                accelerometerEnabled = true;
+                console.log("Device orientation permission granted.");
+              } else {
+                console.log("Device orientation permission denied.");
+              }
+            })
+            .catch(console.error);
+        } else {
+          // For non-iOS 13+ devices, simply add the listener.
+          window.addEventListener("deviceorientation", handleOrientation);
+          accelerometerEnabled = true;
+          console.log("Device orientation enabled (no permission needed).");
+        }
+      }
       // Restart the background music each time the game starts
       const bgMusic = document.getElementById("bgMusic");
       bgMusic.currentTime = 0;
@@ -426,6 +591,7 @@ function handleOrientation(event) {
       score = 0;
       enemies = [];
       healthBoosts = [];
+      coinsOnField = [];
       lastEnemySpawn = performance.now();
       roundNumber = 1;
       roundMessage = "Welcome Agent B-XFTR";
@@ -448,6 +614,18 @@ function handleOrientation(event) {
           y: Math.random() * canvas.height,
           size: 13,
           color: "pink"
+        });
+      }
+    }
+    
+    // Spawn coins in a similar fashion to health boosts (rare)
+    function spawnCoin() {
+      if (Math.random() < 0.25) {
+        coinsOnField.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: 10,
+          color: "goldenrod" // a yellowish shade
         });
       }
     }
@@ -494,6 +672,7 @@ function handleOrientation(event) {
     }
 
     function updateBullets() {
+      // Player bullets update (modified for shotgun)
       for (let i = player.bullets.length - 1; i >= 0; i--) {
         const bullet = player.bullets[i];
         bullet.x += bullet.dx;
@@ -507,6 +686,7 @@ function handleOrientation(event) {
           player.bullets.splice(i, 1);
         }
       }
+      // Enemy bullets update
       for (let i = 0; i < enemies.length; i++) {
         const enemy = enemies[i];
         if (enemy.type === "shooter" || enemy.type === "boss") {
@@ -539,6 +719,19 @@ function handleOrientation(event) {
         ctx.shadowBlur = 5;
       }
     }
+    
+    function drawCoins() {
+      for (let coin of coinsOnField) {
+        ctx.shadowColor = "gold";
+        ctx.shadowBlur = 5;
+        ctx.fillStyle = coin.color;
+        ctx.beginPath();
+        ctx.arc(coin.x, coin.y, coin.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowColor = "gold";
+        ctx.shadowBlur = 5;
+      }
+    }
 
     function drawBullets() {
       for (let bullet of player.bullets) {
@@ -560,8 +753,6 @@ function handleOrientation(event) {
       if (keys["s"] && player.y + player.size / 2 < canvas.height) player.y += 5;
       if (keys["a"] && player.x - player.size / 2 > 0) player.x -= 5;
       if (keys["d"] && player.x + player.size / 2 < canvas.width) player.x += 5;
-      // For desktop, keyboard control applies.
-      // On mobile, player movement is updated via deviceorientation.
     }
 
     function updateEnemies() {
@@ -691,6 +882,21 @@ function handleOrientation(event) {
         }
       }
     }
+    
+    function checkCoinCollisions() {
+      for (let i = coinsOnField.length - 1; i >= 0; i--) {
+        const coin = coinsOnField[i];
+        if (
+          Math.hypot(player.x - coin.x, player.y - coin.y) <
+          (player.size + coin.size) / 2
+        ) {
+          coinCount++;
+          localStorage.setItem("coinCount", coinCount);
+          updateCoinCounters();
+          coinsOnField.splice(i, 1);
+        }
+      }
+    }
 
     function updateHealthBar() {
       const healthBarInner = document.getElementById("healthBarInner");
@@ -767,6 +973,7 @@ function handleOrientation(event) {
           setTimeout(() => {
             spawnEnemies();
             spawnHealthBoost();
+            spawnCoin();
             spawnShooterBullets();
           }, 5000);
         }
@@ -789,12 +996,14 @@ function handleOrientation(event) {
       updateEnemies();
       checkBulletCollisions();
       checkHealthBoostCollisions();
+      checkCoinCollisions();
       updateHealthBar();
 
       drawPlayer();
       drawEnemies();
       drawBullets();
       drawHealthBoosts();
+      drawCoins();
 
       document.getElementById("score").textContent = `Score: ${score}`;
 
@@ -806,13 +1015,40 @@ function handleOrientation(event) {
 
     // Shooting with mouse click.
     canvas.addEventListener("click", (e) => {
+      // Determine angle from player to mouse
       const angle = Math.atan2(e.clientY - player.y, e.clientX - player.x);
-      player.bullets.push({
-        x: player.x,
-        y: player.y,
-        dx: Math.cos(angle) * 6.5,
-        dy: Math.sin(angle) * 6.5
-      });
+      if (playerGun === "shotgun") {
+        // Shotgun fires three bullets with a spread (middle, left, right)
+        const spread = 0.2; // adjust spread angle in radians (~11.5°)
+        // Middle bullet
+        player.bullets.push({
+          x: player.x,
+          y: player.y,
+          dx: Math.cos(angle) * 6.5,
+          dy: Math.sin(angle) * 6.5
+        });
+        // Left bullet
+        player.bullets.push({
+          x: player.x,
+          y: player.y,
+          dx: Math.cos(angle - spread) * 6.5,
+          dy: Math.sin(angle - spread) * 6.5
+        });
+        // Right bullet
+        player.bullets.push({
+          x: player.x,
+          y: player.y,
+          dx: Math.cos(angle + spread) * 6.5,
+          dy: Math.sin(angle + spread) * 6.5
+        });
+      } else { // rifle
+        player.bullets.push({
+          x: player.x,
+          y: player.y,
+          dx: Math.cos(angle) * 6.5,
+          dy: Math.sin(angle) * 6.5
+        });
+      }
     });
 
     // Shooting with touch (multi-touch supported).
@@ -820,12 +1056,34 @@ function handleOrientation(event) {
       e.preventDefault();
       for (let touch of e.changedTouches) {
         const angle = Math.atan2(touch.clientY - player.y, touch.clientX - player.x);
-        player.bullets.push({
-          x: player.x,
-          y: player.y,
-          dx: Math.cos(angle) * 6.5,
-          dy: Math.sin(angle) * 6.5
-        });
+        if (playerGun === "shotgun") {
+          const spread = 0.2;
+          player.bullets.push({
+            x: player.x,
+            y: player.y,
+            dx: Math.cos(angle) * 6.5,
+            dy: Math.sin(angle) * 6.5
+          });
+          player.bullets.push({
+            x: player.x,
+            y: player.y,
+            dx: Math.cos(angle - spread) * 6.5,
+            dy: Math.sin(angle - spread) * 6.5
+          });
+          player.bullets.push({
+            x: player.x,
+            y: player.y,
+            dx: Math.cos(angle + spread) * 6.5,
+            dy: Math.sin(angle + spread) * 6.5
+          });
+        } else {
+          player.bullets.push({
+            x: player.x,
+            y: player.y,
+            dx: Math.cos(angle) * 6.5,
+            dy: Math.sin(angle) * 6.5
+          });
+        }
       }
     }, { passive: false });
 
@@ -919,6 +1177,35 @@ function handleOrientation(event) {
         bgMusic.muted = true;
         muteButton.textContent = "Unmute Music";
       }
+    }
+    
+    // Gun Shop functions
+    function openGunShop() {
+      document.getElementById("gunShopModal").style.display = "block";
+    }
+    
+    function closeGunShop() {
+      document.getElementById("gunShopModal").style.display = "none";
+    }
+    
+    // Called when a gun option is clicked in the gun shop
+    function selectGun(gun) {
+      if (gun === "shotgun") {
+        // Check if player has enough coins (300 coins required)
+        if (coinCount >= 300) {
+          coinCount -= 300;
+          localStorage.setItem("coinCount", coinCount);
+          updateCoinCounters();
+          playerGun = "shotgun";
+          alert("Shotgun purchased and equipped!");
+        } else {
+          alert("Not enough coins for Shotgun!");
+        }
+      } else if (gun === "rifle") {
+        playerGun = "rifle";
+        alert("Rifle equipped!");
+      }
+      closeGunShop();
     }
   </script>
 </body>
