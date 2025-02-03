@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Box Fighter</title>
@@ -399,15 +398,22 @@
     let enemies = [];
     let healthBoosts = [];
     let coinsOnField = [];
-    let lastEnemySpawn = 0;
-    let roundNumber = 1;
-    let roundMessage = "";
-    let roundMessageTime = 0;
     let gameLoopId;
     let gameStarted = false;
-    let welcomeMessageTime = 0;
     let boss = null; // used in rounds < 10
-    // For round 10, bosses will be in the enemies array as type "boss"
+    
+    // Wave timing variables
+    let roundNumber = 1;
+    let nextWaveTime = performance.now();
+    const waveInterval = 15000; // total duration for each wave cycle (ms)
+    const waveMessageDuration = 3000; // duration for the wave message before enemies spawn (ms)
+    let waveStarted = false;
+    let enemiesSpawnedForWave = false;
+    let waveStartTime = 0; // time at which the wave message is shown
+    
+    // Welcome phase variables (5 seconds)
+    let welcomePhase = true;
+    let welcomePhaseEndTime = 0;
     
     // Load owned guns from localStorage; default to ["rifle"]
     let ownedGuns = JSON.parse(localStorage.getItem("ownedGuns")) || ["rifle"];
@@ -530,7 +536,6 @@
     // Update boss health bars based on boss enemies in the game.
     function updateBossHealthBars() {
       const bossBarContainer = document.getElementById("bossHealthBarContainer");
-      // Get all boss enemies in the enemies array.
       const bossEnemies = enemies.filter(e => e.type === "boss");
       if (bossEnemies.length === 0) {
         bossBarContainer.style.display = "none";
@@ -614,13 +619,16 @@
       enemies = [];
       healthBoosts = [];
       coinsOnField = [];
-      lastEnemySpawn = performance.now();
       roundNumber = 1;
-      roundMessage = "Welcome Agent B-XFTR";
-      roundMessageTime = performance.now() + 4000;
+      nextWaveTime = performance.now();
+      waveStarted = false;
+      enemiesSpawnedForWave = false;
+      // Set up the welcome phase for 5 seconds
+      welcomePhase = true;
+      welcomePhaseEndTime = performance.now() + 5000;
+      document.getElementById("roundMessage").textContent = "Welcome Agent B-XFTR";
+      document.getElementById("roundMessage").style.opacity = 1;
       gameStarted = true;
-      welcomeMessageTime = performance.now() + 4000;
-      boss = null;
       displayLeaderboard();
       gameLoop();
     }
@@ -669,9 +677,10 @@
     
     function drawEnemies() {
       for (let enemy of enemies) {
+        // For boss/tank/shooter use specific colors; clone enemies are now white
         ctx.shadowColor = enemy.type === "boss" ? "white" :
                           enemy.type === "tank" ? "yellow" : 
-                          enemy.type === "clone" ? enemy.color : "white";
+                          enemy.type === "clone" ? "white" : "red";
         ctx.shadowBlur = 5;
         ctx.fillStyle = enemy.color;
         ctx.fillRect(
@@ -796,9 +805,12 @@
           enemy.x += Math.cos(angle) * enemy.speed;
           enemy.y += Math.sin(angle) * enemy.speed;
         }
+        // Updated collision: check if bullet is within enemy's full rectangle.
         if (
-          Math.hypot(player.x - enemy.x, player.y - enemy.y) <
-          (player.size + enemy.size) / 2
+          player.x + player.size/2 > enemy.x - enemy.size/2 &&
+          player.x - player.size/2 < enemy.x + enemy.size/2 &&
+          player.y + player.size/2 > enemy.y - enemy.size/2 &&
+          player.y - player.size/2 < enemy.y + enemy.size/2
         ) {
           if (enemy.type === "boss") {
             health = 0;
@@ -827,11 +839,18 @@
     }
     
     function checkBulletCollisions() {
+      // Use rectangular collision for player's bullets vs enemy's full hitbox.
       for (let i = player.bullets.length - 1; i >= 0; i--) {
         const bullet = player.bullets[i];
         for (let j = enemies.length - 1; j >= 0; j--) {
           const enemy = enemies[j];
-          if (Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y) < 20) {
+          // Check if bullet is inside enemy's drawn rectangle.
+          if (
+            bullet.x >= enemy.x - enemy.size / 2 &&
+            bullet.x <= enemy.x + enemy.size / 2 &&
+            bullet.y >= enemy.y - enemy.size / 2 &&
+            bullet.y <= enemy.y + enemy.size / 2
+          ) {
             if (enemy.type === "tank") {
               enemy.hitsRemaining--;
               player.bullets.splice(i, 1);
@@ -845,7 +864,6 @@
             } else if (enemy.type === "boss") {
               enemy.hitsRemaining--;
               player.bullets.splice(i, 1);
-              // The boss health bars are updated in updateBossHealthBars()
               if (enemy.hitsRemaining <= 0) {
                 score += 50;
                 clearInterval(enemy.continuousShootInterval);
@@ -858,12 +876,13 @@
                 const baseAngle = Math.random() * 2 * Math.PI;
                 const splitSpeed = 5;
                 const currentTime = performance.now();
+                // Cloned enemies are now white.
                 const clone1 = {
                   x: enemy.x,
                   y: enemy.y,
                   type: "clone",
                   size: enemy.size / 2,
-                  color: enemy.color,
+                  color: "white",
                   speed: enemy.speed,
                   canClone: false,
                   isSplitting: true,
@@ -876,7 +895,7 @@
                   y: enemy.y,
                   type: "clone",
                   size: enemy.size / 2,
-                  color: enemy.color,
+                  color: "white",
                   speed: enemy.speed,
                   canClone: false,
                   isSplitting: true,
@@ -972,19 +991,44 @@
       updateLeaderboard(score);
     }
     
-    function gameLoop(timestamp) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const roundMessageElement = document.getElementById("roundMessage");
-    
-      if (timestamp - lastEnemySpawn > 15000) {
-        lastEnemySpawn = timestamp;
-        // At round 10, spawn 2 boss enemies at positions away from the player.
-        if (roundNumber === 10) {
-          for (let i = 0; i < 2; i++) {
-            const pos = getRandomSpawnPosition(200);
+    // NEW WAVE SYSTEM WITH WELCOME PHASE AND WAVE MESSAGES
+    function handleWaveLogic(timestamp) {
+      // First, if we are in the welcome phase, show the welcome message.
+      if (welcomePhase) {
+        if (timestamp >= welcomePhaseEndTime) {
+          // End the welcome phase and prepare for the first wave.
+          welcomePhase = false;
+          nextWaveTime = timestamp; // start wave logic immediately after welcome
+          waveStarted = false;
+          enemiesSpawnedForWave = false;
+        } else {
+          // Keep the welcome message visible.
+          document.getElementById("roundMessage").textContent = "Welcome Agent B-XFTR";
+          document.getElementById("roundMessage").style.opacity = 1;
+          return;
+        }
+      }
+      
+      // Now, handle normal wave logic.
+      if (timestamp >= nextWaveTime) {
+        // If this wave hasn’t been started, show the wave message.
+        if (!waveStarted) {
+          waveStartTime = timestamp;
+          if (roundNumber === 5) {
+            document.getElementById("roundMessage").textContent = "Boss Incoming";
+          } else {
+            document.getElementById("roundMessage").textContent = "Wave " + roundNumber;
+          }
+          document.getElementById("roundMessage").style.opacity = 1;
+          waveStarted = true;
+        }
+        // After the message duration, spawn the enemies (if not already spawned) and fade out the message.
+        if (timestamp >= waveStartTime + waveMessageDuration && !enemiesSpawnedForWave) {
+          if (roundNumber === 5) {
+            // Boss battle for wave 5: spawn one boss enemy.
             enemies.push({
-              x: pos.x,
-              y: pos.y,
+              x: canvas.width / 2,
+              y: canvas.height / 4,
               type: "boss",
               size: 120,
               color: "darkred",
@@ -992,108 +1036,45 @@
               hitsRemaining: 85,
               bullets: []
             });
-          }
-        }
-        // Otherwise, if roundNumber > 10 and bosses exist, normal boss logic applies.
-        else if (roundNumber % 5 === 0) {
-          roundMessage = "Boss Incoming";
-          roundMessageTime = timestamp + 5000;
-          setTimeout(() => {
-            // Only spawn a boss if there isn’t one already (for rounds like 5, 15, etc.)
-            if (!enemies.some(e => e.type === "boss")) {
-              // Spawn one boss at center.
-              enemies.push({
-                x: canvas.width / 2,
-                y: canvas.height / 4,
-                type: "boss",
-                size: 120,
-                color: "darkred",
-                speed: 2.35,
-                hitsRemaining: 85,
-                bullets: []
-              });
-            }
-          }, 5000);
-        } else {
-          // Spawn normal enemies.
-          let numberOfEnemies = 6 + roundNumber - 1;
-          for (let i = 0; i < numberOfEnemies; i++) {
-            let r = Math.random();
-            let type;
-            if (r < 0.15) {
-              type = "tank";
-            } else if (r < 0.4) {
-              type = "shooter";
-            } else {
-              type = "melee";
-            }
-            let enemy = {
-              x: Math.random() * canvas.width,
-              y: Math.random() * canvas.height,
-              type: type,
-              dx: 0,
-              dy: 0,
-              bullets: []
-            };
-            if (type === "shooter") {
-              enemy.size = 40;
-              enemy.color = "darkblue";
-              enemy.speed = 1.75;
-              enemy.shootCooldown = 0;
-            } else if (type === "tank") {
-              enemy.size = 60;
-              enemy.color = "yellow";
-              enemy.speed = 1.25;
-              enemy.hitsRemaining = 5;
-            } else {
-              enemy.size = 30;
-              enemy.color = "red";
-              enemy.speed = 2.35;
-            }
-            enemies.push(enemy);
-          }
-        }
-        roundNumber++;
-        if (roundNumber % 5 === 0 && roundNumber !== 10) {
-          roundMessage = "Boss Incoming";
-          roundMessageTime = timestamp + 5000;
-          setTimeout(() => {
-            if (!enemies.some(e => e.type === "boss")) {
-              enemies.push({
-                x: canvas.width / 2,
-                y: canvas.height / 4,
-                type: "boss",
-                size: 120,
-                color: "darkred",
-                speed: 2.35,
-                hitsRemaining: 85,
-                bullets: []
-              });
-            }
-          }, 5000);
-        } else if (roundNumber % 5 !== 0) {
-          roundMessage = "Wave " + roundNumber;
-          roundMessageTime = timestamp + 5000;
-          setTimeout(() => {
+          } else {
             spawnEnemies();
             spawnHealthBoost();
             spawnCoin();
             spawnShooterBullets();
-          }, 5000);
+            // Feature 3: After round 10, randomly spawn an extra boss (30% chance) each wave.
+            if (roundNumber > 10 && Math.random() < 0.3) {
+              enemies.push({
+                x: canvas.width / 2,
+                y: canvas.height / 4,
+                type: "boss",
+                size: 120,
+                color: "darkred",
+                speed: 2.35,
+                hitsRemaining: 85,
+                bullets: []
+              });
+            }
+          }
+          enemiesSpawnedForWave = true;
+          // Fade out the round message.
+          document.getElementById("roundMessage").style.opacity = 0;
+        }
+        // When the full wave interval has passed, prepare for the next wave.
+        if (timestamp >= nextWaveTime + waveInterval) {
+          roundNumber++;
+          nextWaveTime = timestamp;
+          waveStarted = false;
+          enemiesSpawnedForWave = false;
         }
       }
+    }
     
-      if (performance.now() < welcomeMessageTime) {
-        roundMessageElement.textContent = "Welcome Agent B-XFTR";
-        roundMessageElement.style.opacity = 1;
-      } else if (timestamp < roundMessageTime) {
-        roundMessageElement.textContent = roundMessage;
-        roundMessageElement.style.opacity = 1;
-      } else {
-        roundMessageElement.style.opacity = 0;
-        roundMessage = "";
-      }
-    
+    function gameLoop(timestamp) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Handle welcome phase and wave messaging/enemy spawning
+      handleWaveLogic(timestamp);
+      
       updatePlayer();
       updateBullets();
       updateEnemies();
@@ -1102,15 +1083,15 @@
       checkCoinCollisions();
       updateHealthBar();
       updateBossHealthBars();
-    
+      
       drawPlayer();
       drawEnemies();
       drawBullets();
       drawHealthBoosts();
       drawCoins();
-    
+      
       document.getElementById("score").textContent = `Score: ${score}`;
-    
+      
       gameLoopId = requestAnimationFrame(gameLoop);
     }
     
@@ -1218,12 +1199,17 @@
       }
     }, { passive: false });
     
+    // Modified spawnEnemies to include clone enemies (chance when roundNumber >= 5).
+    // Clone enemies are now white.
     function spawnEnemies() {
       let numberOfEnemies = 6 + roundNumber - 1;
       for (let i = 0; i < numberOfEnemies; i++) {
         let r = Math.random();
         let type;
-        if (r < 0.15) {
+        // For rounds 5 and above, add a chance for a clone enemy.
+        if (roundNumber >= 5 && r > 0.8) {
+          type = "clone";
+        } else if (r < 0.15) {
           type = "tank";
         } else if (r < 0.4) {
           type = "shooter";
@@ -1248,7 +1234,13 @@
           enemy.color = "yellow";
           enemy.speed = 1.25;
           enemy.hitsRemaining = 5;
-        } else {
+        } else if (type === "clone") {
+          enemy.size = 30;
+          enemy.color = "white";
+          enemy.speed = 2.35;
+          enemy.canClone = true;
+          enemy.isSplitting = false;
+        } else { // melee
           enemy.size = 30;
           enemy.color = "red";
           enemy.speed = 2.35;
