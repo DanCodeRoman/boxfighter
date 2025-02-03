@@ -1018,6 +1018,14 @@
                 playEnemyKillSound();
               }
               break;
+              } else if (enemy.type === "shooter") {  // NEW: Shooters need 2 hits
+          enemy.hitsRemaining--;
+          player.bullets.splice(i, 1);
+          if (enemy.hitsRemaining <= 0) {
+            score += 10;
+            enemies.splice(j, 1);
+            playEnemyKillSound();
+          }
             } else if (enemy.type === "boss") {
               enemy.hitsRemaining--;
               player.bullets.splice(i, 1);
@@ -1467,6 +1475,7 @@
           enemy.size = 40;
           enemy.color = "darkblue";
           enemy.speed = 1.75;
+          enemy.hitsRemaining = 2;
           enemy.shootCooldown = 0;
           enemy.shootInterval = setInterval(() => {
             if (enemies.indexOf(enemy) !== -1) {
