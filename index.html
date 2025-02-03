@@ -426,8 +426,6 @@
   <canvas id="gameCanvas"></canvas>
   <div id="roundMessage"></div>
   
-  <!-- (On-screen joystick removed for mobile controls) -->
-
   <script>
     // Set up canvas
     const canvas = document.getElementById("gameCanvas");
@@ -451,10 +449,12 @@
     let welcomeMessageTime = 0;
     let boss = null;
     let ownedGuns = ["rifle"]; // The player always has the rifle.
-
     
     // Gun selection: default "rifle" (one bullet per shot)
     let playerGun = "rifle";
+
+    // New global variable for pause state
+    let paused = false;
 
     // Load persistent coin count from localStorage or initialize to 0
     let coinCount = parseInt(localStorage.getItem("coinCount")) || 0;
@@ -558,7 +558,30 @@
       enableAccelerometerControls();
     }
 
+    // Pause game function: shows main menu and cancels the game loop.
+    function pauseGame() {
+      if (!paused) {
+        paused = true;
+        if (gameLoopId) {
+          cancelAnimationFrame(gameLoopId);
+        }
+        document.getElementById("startMenu").style.display = "flex";
+        document.getElementById("gameUI").style.display = "none";
+        document.getElementById("gameOverScreen").style.display = "none";
+        console.log("Game paused");
+      }
+    }
+
+    // Modified startGame function to resume if paused or start fresh otherwise.
     function startGame() {
+      if (paused) {
+        paused = false;
+        document.getElementById("startMenu").style.display = "none";
+        document.getElementById("gameUI").style.display = "block";
+        gameLoop();
+        return;
+      }
+      
       if (gameLoopId) {
         cancelAnimationFrame(gameLoopId);
       }
@@ -577,7 +600,6 @@
             })
             .catch(console.error);
         } else {
-          // For non-iOS 13+ devices, simply add the listener.
           window.addEventListener("deviceorientation", handleOrientation);
           accelerometerEnabled = true;
           console.log("Device orientation enabled (no permission needed).");
@@ -631,7 +653,7 @@
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
           size: 10,
-          color: "goldenrod" // a yellowish shade
+          color: "goldenrod"
         });
       }
     }
@@ -818,7 +840,6 @@
         for (let j = enemies.length - 1; j >= 0; j--) {
           const enemy = enemies[j];
           if (Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y) < 20) {
-            // For tank enemies, subtract a hit and play sound on final hit
             if (enemy.type === "tank") {
               enemy.hitsRemaining--;
               player.bullets.splice(i, 1);
@@ -844,7 +865,6 @@
               }
               break;
             } else {
-              // For melee and shooter enemies
               score += 15;
               health = Math.min(100, health + 5);
               player.bullets.splice(i, 1);
@@ -1019,11 +1039,17 @@
     window.addEventListener("keydown", (e) => (keys[e.key] = true));
     window.addEventListener("keyup", (e) => (keys[e.key] = false));
 
+    // Listen for Escape key to pause the game (works during gameplay or on game over)
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        pauseGame();
+      }
+    });
+
     // Shooting with mouse click.
     canvas.addEventListener("click", (e) => {
       const angle = Math.atan2(e.clientY - player.y, e.clientX - player.x);
       if (playerGun === "shotgun") {
-        // Shotgun fires three bullets with a spread (middle, left, right)
         const spread = 0.2;
         player.bullets.push({
           x: player.x,
@@ -1044,10 +1070,9 @@
           dy: Math.sin(angle + spread) * 6.5
         });
       } else if (playerGun === "uzi") {
-        // Uzi fires a burst of 5 bullets at 0.1s intervals.
         for (let i = 0; i < 5; i++) {
           setTimeout(() => {
-            let deviation = (Math.random() - 0.5) * 0.2; // deviation between -0.1 and 0.1 radians
+            let deviation = (Math.random() - 0.5) * 0.2;
             let bulletAngle = angle + deviation;
             player.bullets.push({
               x: player.x,
@@ -1057,7 +1082,7 @@
             });
           }, i * 50);
         }
-      } else { // Rifle (default)
+      } else {
         player.bullets.push({
           x: player.x,
           y: player.y,
@@ -1219,46 +1244,41 @@
     
     // Called when a gun option is clicked in the gun shop
     function selectGun(gun) {
-  if (gun === "rifle") {
-    // Rifle is free and always owned.
-    playerGun = "rifle";
-    alert("Rifle equipped!");
-  } else {
-    // For other guns, check if the player already owns it.
-    if (ownedGuns.includes(gun)) {
-      // If already owned, just equip it without reducing coins.
-      playerGun = gun;
-      alert(gun.charAt(0).toUpperCase() + gun.slice(1) + " equipped!");
-    } else {
-      // If not owned, then check for sufficient coins and purchase.
-      if (gun === "shotgun") {
-        if (coinCount * 50 >= 300) {
-          coinCount -= 6; // (300 / 50)
-          localStorage.setItem("coinCount", coinCount);
-          updateCoinCounters();
-          playerGun = "shotgun";
-          ownedGuns.push("shotgun");
-          alert("Shotgun purchased and equipped!");
+      if (gun === "rifle") {
+        playerGun = "rifle";
+        alert("Rifle equipped!");
+      } else {
+        if (ownedGuns.includes(gun)) {
+          playerGun = gun;
+          alert(gun.charAt(0).toUpperCase() + gun.slice(1) + " equipped!");
         } else {
-          alert("Not enough coins for Shotgun!");
-        }
-      } else if (gun === "uzi") {
-        if (coinCount * 50 >= 1000) {
-          coinCount -= 20; // (1000 / 50)
-          localStorage.setItem("coinCount", coinCount);
-          updateCoinCounters();
-          playerGun = "uzi";
-          ownedGuns.push("uzi");
-          alert("Uzi purchased and equipped!");
-        } else {
-          alert("Not enough coins for Uzi!");
+          if (gun === "shotgun") {
+            if (coinCount * 50 >= 300) {
+              coinCount -= 6; // (300 / 50)
+              localStorage.setItem("coinCount", coinCount);
+              updateCoinCounters();
+              playerGun = "shotgun";
+              ownedGuns.push("shotgun");
+              alert("Shotgun purchased and equipped!");
+            } else {
+              alert("Not enough coins for Shotgun!");
+            }
+          } else if (gun === "uzi") {
+            if (coinCount * 50 >= 1000) {
+              coinCount -= 20; // (1000 / 50)
+              localStorage.setItem("coinCount", coinCount);
+              updateCoinCounters();
+              playerGun = "uzi";
+              ownedGuns.push("uzi");
+              alert("Uzi purchased and equipped!");
+            } else {
+              alert("Not enough coins for Uzi!");
+            }
+          }
         }
       }
+      closeGunShop();
     }
-  }
-  closeGunShop();
-}
-
   </script>
 </body>
 </html>
