@@ -218,20 +218,11 @@
       color: silver;
       margin-right: 20px;
     }
-    #playerColor {
-      width: 30px;
-      height: 30px;
-      border: 4px solid white;
-      background: none;
-      cursor: pointer;
-      border-radius: 5px;
-    }
+    /* The preview now shows the player ship with drop-shadow */
     #colorPreview {
       width: 40px;
       height: 40px;
-      border: 3px solid white;
       margin: 10px auto;
-      border-radius: 5px;
     }
     #leaderboard {
       background-color: rgba(255, 255, 255, 0.1);
@@ -337,9 +328,11 @@
     <!-- Gun Shop Button (Main Menu) -->
     <button id="menuGunShopButton" onclick="openGunShop()">Gun Shop</button>
     <div id="colorPickerContainer">
-      <label for="playerColor">Change Agent:</label>
+      <label for="playerColor">Change Agent Shadow:</label>
       <input type="color" id="playerColor" value="#39ff14" />
-      <div id="colorPreview"></div>
+      <div id="colorPreview">
+        <img src="player.png" style="width:40px;height:40px;filter: drop-shadow(0 0 10px #39ff14);" />
+      </div>
     </div>
   </div>
   <!-- Game Over Screen -->
@@ -446,29 +439,37 @@
     }
     updateCoinCounters();
     
+    // Create and load the player ship image.
+    const playerImage = new Image();
+    playerImage.src = "player.png";
+    
     const player = {
       x: canvas.width / 2,
       y: canvas.height / 2,
       size: 40,
-      color: "rgb(57, 255, 20)",
+      // The player's "color" now is used for the drop-shadow of the ship.
+      color: "#39ff14",
       bullets: []
     };
     
-    // For desktop users, keyboard movement will be used.
-    // For mobile users, we will use the deviceorientation event.
-    let accelerometerEnabled = false;
+    // Global mouse position for rotating the ship.
+    let mousePos = { x: player.x, y: player.y };
+    
+    // Update mouse position on move
+    document.addEventListener("mousemove", (e) => {
+      mousePos = { x: e.clientX, y: e.clientY };
+      // Also update the colorPreview drop-shadow if needed (handled in colorPicker below)
+    });
     
     const colorPicker = document.getElementById("playerColor");
     const colorPreview = document.getElementById("colorPreview");
     let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
     
-    colorPreview.style.backgroundColor = colorPicker.value;
-    player.color = colorPicker.value;
-    
+    // When the user changes the color, update the player's drop-shadow color
     colorPicker.addEventListener("input", (e) => {
       player.color = e.target.value;
-      colorPreview.style.backgroundColor = e.target.value;
-      ctx.shadowColor = e.target.value;
+      // Update the preview image drop-shadow filter.
+      colorPreview.innerHTML = `<img src="player.png" style="width:40px;height:40px;filter: drop-shadow(0 0 10px ${e.target.value});" />`;
     });
     
     // Create enemy kill sound helper.
@@ -523,14 +524,12 @@
             .then(permissionState => {
               if (permissionState === 'granted') {
                 window.addEventListener("deviceorientation", handleOrientation);
-                accelerometerEnabled = true;
                 console.log("Accelerometer enabled.");
               }
             })
             .catch(console.error);
         } else {
           window.addEventListener("deviceorientation", handleOrientation);
-          accelerometerEnabled = true;
           console.log("Accelerometer enabled.");
         }
       }
@@ -613,7 +612,6 @@
             .then(permissionState => {
               if (permissionState === "granted") {
                 window.addEventListener("deviceorientation", handleOrientation);
-                accelerometerEnabled = true;
                 console.log("Device orientation permission granted.");
               } else {
                 console.log("Device orientation permission denied.");
@@ -622,14 +620,12 @@
             .catch(console.error);
         } else {
           window.addEventListener("deviceorientation", handleOrientation);
-          accelerometerEnabled = true;
           console.log("Device orientation enabled (no permission needed).");
         }
       }
       const bgMusic = document.getElementById("bgMusic");
       bgMusic.currentTime = 0;
       bgMusic.play();
-      colorPreview.style.backgroundColor = player.color;
       document.getElementById("startMenu").style.display = "none";
       document.getElementById("gameUI").style.display = "block";
       document.getElementById("gameOverScreen").style.display = "none";
@@ -639,7 +635,7 @@
       enemies = [];
       healthBoosts = [];
       coinsOnField = [];
-      // Clear enemy bullets so that old boss (or shooter) bullets are removed on restart.
+      // Clear enemy bullets on restart.
       enemyBullets = [];
       roundNumber = 1;
       nextWaveTime = performance.now();
@@ -682,20 +678,20 @@
       }
     }
     
-    ctx.shadowColor = player.color;
-    
+    // Draw the player ship.
+    // The ship is drawn from the center and rotated so its top faces the mouse.
     function drawPlayer() {
+      // Compute the angle from the ship to the mouse.
+      // Subtract Math.PI/2 so the top of the ship (image orientation) points to the mouse.
+      let angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x) - Math.PI/2;
+      ctx.save();
+      ctx.translate(player.x, player.y);
+      ctx.rotate(angle);
       ctx.shadowColor = player.color;
       ctx.shadowBlur = 50;
-      ctx.fillStyle = player.color;
-      ctx.fillRect(
-        player.x - player.size / 2,
-        player.y - player.size / 2,
-        player.size,
-        player.size
-      );
-      ctx.shadowColor = player.color;
-      ctx.shadowBlur = 50;
+      // Draw the ship image centered at (0,0)
+      ctx.drawImage(playerImage, -player.size/2, -player.size/2, player.size, player.size);
+      ctx.restore();
     }
     
     function drawEnemies() {
