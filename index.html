@@ -268,10 +268,10 @@
 </head>
 <body>
   <!-- Background music element -->
-  <audio id="bgMusic" src="music.mp3" loop></audio>
+  <audio id="bgMusic" src="music.mp3" loop preload="auto"></audio>
 
   <!-- Enemy kill sound (will be cloned to allow overlapping) -->
-  <audio id="enemyKillSound" src="enemy-kill.mp3"></audio>
+  <audio id="enemyKillSound" src="enemy-kill.mp3" preload="auto"></audio>
 
   <!-- Mute Music Button -->
   <button id="muteButton" onclick="toggleMusic()">Mute Music</button>
@@ -363,10 +363,13 @@
     // Create enemy kill sound helper.
     const enemyKillSound = document.getElementById("enemyKillSound");
     function playEnemyKillSound() {
-      // Clone the node to allow overlapping plays.
       const soundClone = enemyKillSound.cloneNode();
-      soundClone.volume = 1.0
-      soundClone.play();
+      soundClone.volume = 1.0;
+      soundClone.play().then(() => {
+        console.log("Enemy kill sound played");
+      }).catch(err => {
+        console.error("Error playing enemy kill sound:", err);
+      });
     }
 
     function startGame() {
@@ -901,7 +904,6 @@
       e.preventDefault();
       let clientX, clientY;
       if (e.changedTouches) {
-        // Use first touch point
         clientX = e.changedTouches[0].clientX;
         clientY = e.changedTouches[0].clientY;
       } else {
@@ -914,14 +916,11 @@
       const distance = Math.hypot(dx, dy);
       const angle = Math.atan2(dy, dx);
 
-      // Clamp the knob movement to the maximum distance.
       const clampedDistance = Math.min(distance, maxDistance);
       const knobX = clampedDistance * Math.cos(angle);
       const knobY = clampedDistance * Math.sin(angle);
 
       joystickKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
-
-      // Normalize the joystick output to a range between -1 and 1.
       joystickDirection.x = knobX / maxDistance;
       joystickDirection.y = knobY / maxDistance;
     }
