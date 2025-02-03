@@ -593,7 +593,7 @@
     
     // When starting the game, include a 5‑second welcome phase.
     function startGame() {
-       const canvas = document.getElementById("gameCanvas");
+      const canvas = document.getElementById("gameCanvas");
       canvas.style.cursor = "url('https://i.postimg.cc/gk1NVmNN/output-onlinepngtools.png') 30 30, crosshair";
       if (paused) {
         paused = false;
@@ -639,6 +639,8 @@
       enemies = [];
       healthBoosts = [];
       coinsOnField = [];
+      // Clear enemy bullets so that old boss (or shooter) bullets are removed on restart.
+      enemyBullets = [];
       roundNumber = 1;
       nextWaveTime = performance.now();
       waveStarted = false;
@@ -746,7 +748,7 @@
           player.bullets.splice(i, 1);
         }
       }
-      // Update global enemy bullets (from shooter enemies).
+      // Update global enemy bullets (from shooter enemies and transferred boss bullets).
       for (let i = enemyBullets.length - 1; i >= 0; i--) {
         const bullet = enemyBullets[i];
         bullet.x += bullet.dx;
@@ -760,7 +762,7 @@
           enemyBullets.splice(i, 1);
         }
       }
-      // Update boss enemy bullets (stored in enemy.bullets).
+      // Update boss enemy bullets (stored in enemy.bullets) for bosses still alive.
       for (let enemy of enemies) {
         if (enemy.type === "boss") {
           for (let i = enemy.bullets.length - 1; i >= 0; i--) {
@@ -806,7 +808,7 @@
       }
     }
     
-    // Draw player's bullets. If a bullet is flagged as a flamethrower bullet, draw it larger and filled red.
+    // Draw player's bullets. Flamethrower bullets are drawn larger and filled red.
     function drawBullets() {
       for (let bullet of player.bullets) {
         if (bullet.flamethrower) {
@@ -829,7 +831,7 @@
           ctx.shadowBlur = 8;
         }
       }
-      // Draw enemy bullets (from shooter enemies).
+      // Draw enemy bullets (from shooter enemies and transferred boss bullets).
       for (let bullet of enemyBullets) {
         ctx.shadowColor = "darkblue";
         ctx.shadowBlur = 8;
@@ -1016,6 +1018,9 @@
               if (enemy.hitsRemaining <= 0) {
                 score += 50;
                 clearInterval(enemy.shootInterval);
+                // Transfer the boss's remaining bullets into the global enemyBullets array
+                enemyBullets.push(...enemy.bullets);
+                enemy.bullets = [];
                 enemies.splice(j, 1);
               }
               break;
