@@ -367,9 +367,13 @@
       <strong>Shotgun</strong><br>
       (300 Coins) - 3-shot spread.
     </div>
+    <div class="gunOption" onclick="selectGun('flamethrower')">
+      <strong>Flamethrower</strong><br>
+      (1000 Coins) - Hold down to continuously shoot a fan of red, short–lived, larger bullets.
+    </div>
     <div class="gunOption" onclick="selectGun('uzi')">
       <strong>Uzi</strong><br>
-      (1000 Coins) - Burst fire of 5 bullets.
+      (2000 Coins) - Burst fire of 5 bullets.
     </div>
     <button id="closeGunShop" onclick="closeGunShop()">Close</button>
   </div>
@@ -721,10 +725,16 @@
       }
     }
     
+    // Update player's and enemy bullets.
     function updateBullets() {
       // Update player's bullets.
       for (let i = player.bullets.length - 1; i >= 0; i--) {
         const bullet = player.bullets[i];
+        // Check for lifetime (for flamethrower bullets)
+        if (bullet.lifetime && performance.now() - bullet.creationTime >= bullet.lifetime) {
+          player.bullets.splice(i, 1);
+          continue;
+        }
         bullet.x += bullet.dx;
         bullet.y += bullet.dy;
         if (
@@ -796,17 +806,28 @@
       }
     }
     
+    // Draw player's bullets. If a bullet is flagged as a flamethrower bullet, draw it larger and filled red.
     function drawBullets() {
-      // Draw player's bullets.
       for (let bullet of player.bullets) {
-        ctx.shadowColor = "red";
-        ctx.shadowBlur = 8;
-        ctx.fillStyle = "black";
-        ctx.beginPath();
-        ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowColor = "red";
-        ctx.shadowBlur = 8;
+        if (bullet.flamethrower) {
+          ctx.shadowColor = "red";
+          ctx.shadowBlur = 8;
+          ctx.fillStyle = "red";
+          ctx.beginPath();
+          ctx.arc(bullet.x, bullet.y, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowColor = "red";
+          ctx.shadowBlur = 8;
+        } else {
+          ctx.shadowColor = "red";
+          ctx.shadowBlur = 8;
+          ctx.fillStyle = "black";
+          ctx.beginPath();
+          ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowColor = "red";
+          ctx.shadowBlur = 8;
+        }
       }
       // Draw enemy bullets (from shooter enemies).
       for (let bullet of enemyBullets) {
@@ -1239,57 +1260,16 @@
       }
     });
     
-    canvas.addEventListener("click", (e) => {
-      playShootSound();
-      const angle = Math.atan2(e.clientY - player.y, e.clientX - player.x);
-      if (playerGun === "shotgun") {
-        const spread = 0.2;
-        player.bullets.push({
-          x: player.x,
-          y: player.y,
-          dx: Math.cos(angle) * 6.5,
-          dy: Math.sin(angle) * 6.5
-        });
-        player.bullets.push({
-          x: player.x,
-          y: player.y,
-          dx: Math.cos(angle - spread) * 6.5,
-          dy: Math.sin(angle - spread) * 6.5
-        });
-        player.bullets.push({
-          x: player.x,
-          y: player.y,
-          dx: Math.cos(angle + spread) * 6.5,
-          dy: Math.sin(angle + spread) * 6.5
-        });
-      } else if (playerGun === "uzi") {
-        for (let i = 0; i < 5; i++) {
-          setTimeout(() => {
-            let deviation = (Math.random() - 0.5) * 0.2;
-            let bulletAngle = angle + deviation;
-            player.bullets.push({
-              x: player.x,
-              y: player.y,
-              dx: Math.cos(bulletAngle) * 6.5,
-              dy: Math.sin(bulletAngle) * 6.5
-            });
-          }, i * 50);
-        }
-      } else {
-        player.bullets.push({
-          x: player.x,
-          y: player.y,
-          dx: Math.cos(angle) * 6.5,
-          dy: Math.sin(angle) * 6.5
-        });
-      }
-    });
+    // Variables and functions for the flamethrower gun
+    let flamethrowerInterval = null;
+    // Store the last known mouse/touch position (used to aim the flamethrower)
+    let lastMousePos = { x: player.x, y: player.y };
     
-    canvas.addEventListener("touchstart", (e) => {
-      e.preventDefault();
-      playShootSound();
-      for (let touch of e.changedTouches) {
-        const angle = Math.atan2(touch.clientY - player.y, touch.clientX - player.x);
+    // For non-flamethrower guns, the normal click event is used.
+    canvas.addEventListener("click", (e) => {
+      if (playerGun !== "flamethrower") {
+        playShootSound();
+        const angle = Math.atan2(e.clientY - player.y, e.clientX - player.x);
         if (playerGun === "shotgun") {
           const spread = 0.2;
           player.bullets.push({
@@ -1321,7 +1301,7 @@
                 dx: Math.cos(bulletAngle) * 6.5,
                 dy: Math.sin(bulletAngle) * 6.5
               });
-            }, i * 100);
+            }, i * 50);
           }
         } else {
           player.bullets.push({
@@ -1332,7 +1312,121 @@
           });
         }
       }
+    });
+    
+    // For flamethrower, use mousedown/mouseup for continuous firing.
+    canvas.addEventListener("mousedown", function(e) {
+      if (playerGun === "flamethrower") {
+        lastMousePos = { x: e.clientX, y: e.clientY };
+        if (!flamethrowerInterval) {
+          flamethrowerInterval = setInterval(shootFlame, 100);
+        }
+      }
+    });
+    canvas.addEventListener("mouseup", function(e) {
+      if (playerGun === "flamethrower" && flamethrowerInterval) {
+        clearInterval(flamethrowerInterval);
+        flamethrowerInterval = null;
+      }
+    });
+    canvas.addEventListener("mousemove", function(e) {
+      if (playerGun === "flamethrower") {
+        lastMousePos = { x: e.clientX, y: e.clientY };
+      }
+    });
+    
+    // For touch devices: override touch events when using the flamethrower.
+    canvas.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      if (playerGun === "flamethrower") {
+        let touch = e.changedTouches[0];
+        lastMousePos = { x: touch.clientX, y: touch.clientY };
+        if (!flamethrowerInterval) {
+          flamethrowerInterval = setInterval(shootFlame, 100);
+        }
+      } else {
+        playShootSound();
+        for (let touch of e.changedTouches) {
+          const angle = Math.atan2(touch.clientY - player.y, touch.clientX - player.x);
+          if (playerGun === "shotgun") {
+            const spread = 0.2;
+            player.bullets.push({
+              x: player.x,
+              y: player.y,
+              dx: Math.cos(angle) * 6.5,
+              dy: Math.sin(angle) * 6.5
+            });
+            player.bullets.push({
+              x: player.x,
+              y: player.y,
+              dx: Math.cos(angle - spread) * 6.5,
+              dy: Math.sin(angle - spread) * 6.5
+            });
+            player.bullets.push({
+              x: player.x,
+              y: player.y,
+              dx: Math.cos(angle + spread) * 6.5,
+              dy: Math.sin(angle + spread) * 6.5
+            });
+          } else if (playerGun === "uzi") {
+            for (let i = 0; i < 5; i++) {
+              setTimeout(() => {
+                let deviation = (Math.random() - 0.5) * 0.2;
+                let bulletAngle = angle + deviation;
+                player.bullets.push({
+                  x: player.x,
+                  y: player.y,
+                  dx: Math.cos(bulletAngle) * 6.5,
+                  dy: Math.sin(bulletAngle) * 6.5
+                });
+              }, i * 100);
+            }
+          } else {
+            player.bullets.push({
+              x: player.x,
+              y: player.y,
+              dx: Math.cos(angle) * 6.5,
+              dy: Math.sin(angle) * 6.5
+            });
+          }
+        }
+      }
     }, { passive: false });
+    
+    canvas.addEventListener("touchend", (e) => {
+      if (playerGun === "flamethrower" && flamethrowerInterval) {
+        clearInterval(flamethrowerInterval);
+        flamethrowerInterval = null;
+      }
+    });
+    
+    canvas.addEventListener("touchmove", (e) => {
+      if (playerGun === "flamethrower") {
+        let touch = e.touches[0];
+        lastMousePos = { x: touch.clientX, y: touch.clientY };
+      }
+    });
+    
+    // Function for the flamethrower: continuously fires a fan of 5 red bullets.
+    function shootFlame() {
+      // Determine the base angle from the player toward the last pointer position.
+      let baseAngle = Math.atan2(lastMousePos.y - player.y, lastMousePos.x - player.x) || 0;
+      const spread = 0.2; // angle offset between bullets
+      const speed = 4;   // slower speed for short range
+      // Shoot 5 bullets in a fan (from -2 to +2 offsets)
+      for (let i = -2; i <= 2; i++) {
+        let bulletAngle = baseAngle + i * spread;
+        player.bullets.push({
+          x: player.x,
+          y: player.y,
+          dx: Math.cos(bulletAngle) * speed,
+          dy: Math.sin(bulletAngle) * speed,
+          lifetime: 1000, // bullet disappears after 1 second
+          creationTime: performance.now(),
+          flamethrower: true
+        });
+      }
+    }
     
     // Modified spawnEnemies to include clone enemies (chance when roundNumber >= 5).
     // Clone enemies are drawn white.
@@ -1452,9 +1546,21 @@
             } else {
               alert("Not enough coins for Shotgun!");
             }
-          } else if (gun === "uzi") {
+          } else if (gun === "flamethrower") {
             if (coinCount * 50 >= 1000) {
               coinCount -= 20;
+              localStorage.setItem("coinCount", coinCount);
+              updateCoinCounters();
+              playerGun = "flamethrower";
+              ownedGuns.push("flamethrower");
+              localStorage.setItem("ownedGuns", JSON.stringify(ownedGuns));
+              alert("Flamethrower purchased and equipped!");
+            } else {
+              alert("Not enough coins for Flamethrower!");
+            }
+          } else if (gun === "uzi") {
+            if (coinCount * 50 >= 2000) {
+              coinCount -= 40;
               localStorage.setItem("coinCount", coinCount);
               updateCoinCounters();
               playerGun = "uzi";
