@@ -558,13 +558,15 @@
       enableAccelerometerControls();
     }
 
-    // Pause game function: shows main menu and cancels the game loop.
+    // Pause game function: shows main menu, cancels the game loop, and pauses background music.
     function pauseGame() {
       if (!paused) {
         paused = true;
         if (gameLoopId) {
           cancelAnimationFrame(gameLoopId);
         }
+        // Pause the background music
+        document.getElementById("bgMusic").pause();
         document.getElementById("startMenu").style.display = "flex";
         document.getElementById("gameUI").style.display = "none";
         document.getElementById("gameOverScreen").style.display = "none";
@@ -578,6 +580,8 @@
         paused = false;
         document.getElementById("startMenu").style.display = "none";
         document.getElementById("gameUI").style.display = "block";
+        // Resume the background music (it will continue from where it was paused)
+        document.getElementById("bgMusic").play();
         gameLoop();
         return;
       }
