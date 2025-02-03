@@ -334,18 +334,25 @@
         console.error("Error playing enemy kill sound:", err);
       });
     }
+let baseGamma = null;
+let baseBeta = null;
+const sensitivity = 0.2; // Lower values will make movement less drastic
 
-    // Accelerometer-based movement for mobile devices.
-    function handleOrientation(event) {
-      // event.gamma: left/right tilt in degrees.
-      // event.beta: front/back tilt in degrees.
-      // Map these values to player movement.
-      // Adjust the sensitivity factors as needed.
-      const factor = 0.5; // Sensitivity factor for movement
-      // For horizontal movement, use gamma (range ~ -30 to 30 degrees)
-      // For vertical movement, use beta offset by 90 degrees (level is ~90)
-      player.x += event.gamma * factor;
-      player.y += (event.beta - 90) * factor;
+function handleOrientation(event) {
+  // On the first event, calibrate the sensor (record baseline values)
+  if (baseGamma === null || baseBeta === null) {
+    baseGamma = event.gamma;
+    baseBeta = event.beta;
+    return; // Skip movement on the first call while calibrating
+  }
+  
+  // Calculate the relative tilt from the baseline
+  const relativeGamma = event.gamma - baseGamma;
+  const relativeBeta = event.beta - baseBeta;
+  
+  // Apply the sensitivity factor to smooth out the movement
+  player.x += relativeGamma * sensitivity;
+  player.y += relativeBeta * sensitivity;
       
       // Constrain player within the canvas.
       player.x = Math.max(player.size / 2, Math.min(canvas.width - player.size / 2, player.x));
