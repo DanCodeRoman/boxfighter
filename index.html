@@ -384,6 +384,27 @@
       if (gameLoopId) {
         cancelAnimationFrame(gameLoopId);
       }
+      if (/Mobi|Android/i.test(navigator.userAgent)) {
+    if (typeof DeviceOrientationEvent !== "undefined" &&
+        typeof DeviceOrientationEvent.requestPermission === "function") {
+      DeviceOrientationEvent.requestPermission()
+        .then(permissionState => {
+          if (permissionState === "granted") {
+            window.addEventListener("deviceorientation", handleOrientation);
+            accelerometerEnabled = true;
+            console.log("Device orientation permission granted.");
+          } else {
+            console.log("Device orientation permission denied.");
+          }
+        })
+        .catch(console.error);
+    } else {
+      // For non-iOS 13+ devices, simply add the listener.
+      window.addEventListener("deviceorientation", handleOrientation);
+      accelerometerEnabled = true;
+      console.log("Device orientation enabled (no permission needed).");
+    }
+  }
       // Restart the background music each time the game starts
       const bgMusic = document.getElementById("bgMusic");
       bgMusic.currentTime = 0;
