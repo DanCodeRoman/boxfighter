@@ -841,15 +841,15 @@
     }
     
     // Draw the shield if active
-   function drawShield() {
+  function drawShield() {
   if (shieldActive) {
     // Set the radius of the shield circle.
     // For example, place it 5 pixels away from the player’s edge:
-    const shieldRadius = player.size / 2 + 5;
+    const shieldRadius = player.size / 2 + 10;
     
     ctx.beginPath();
     // Draw a full circle (0 to 2*PI radians) around the player.
-    ctx.arc(player.x, player.y, shieldRadius, 0, Math.PI * 3);
+    ctx.arc(player.x, player.y, shieldRadius, 0, Math.PI * 2);
     
     // Set the shield color based on its durability:
     ctx.strokeStyle = getShieldColor(); // This function returns neon blue, yellow, or red.
