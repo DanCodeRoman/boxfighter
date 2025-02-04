@@ -845,7 +845,10 @@
   if (shieldActive) {
     // Set the radius of the shield circle.
     // For example, place it 5 pixels away from the player’s edge:
-    const shieldRadius = player.size / 2 + 10;
+    function isWithinShield(x, y) {
+  const shieldRadius = player.size / 2 + 15; // must match your drawing code
+  return Math.hypot(x - player.x, y - player.y) <= shieldRadius;
+}
     
     ctx.beginPath();
     // Draw a full circle (0 to 2*PI radians) around the player.
@@ -1006,33 +1009,35 @@
         }
         // Check collision with player
         if (
-          player.x + player.size/2 > enemy.x - enemy.size/2 &&
-          player.x - player.size/2 < enemy.x + enemy.size/2 &&
-          player.y + player.size/2 > enemy.y - enemy.size/2 &&
-          player.y - player.size/2 < enemy.y + enemy.size/2
-        ) {
-          // If the enemy is coming from the front (shield zone) and shield is active, block the hit.
-          if (isInShieldZone(enemy.x, enemy.y) && shieldActive) {
-            shieldHit();
-            if (enemy.shootInterval) {
-              clearInterval(enemy.shootInterval);
-            }
-            enemies.splice(i, 1);
-          } else {
-            if (enemy.type === "boss") {
-              health = 0;
-            }
-            health -= 30;
-            if (enemy.shootInterval) {
-              clearInterval(enemy.shootInterval);
-            }
-            enemies.splice(i, 1);
-            if (health <= 0) {
-              endGame();
-              return;
-            }
-          }
-        }
+  player.x + player.size/2 > enemy.x - enemy.size/2 &&
+  player.x - player.size/2 < enemy.x + enemy.size/2 &&
+  player.y + player.size/2 > enemy.y - enemy.size/2 &&
+  player.y - player.size/2 < enemy.y + enemy.size/2
+) {
+  // Existing logic: if shield active and enemy in shield hitbox, process shield hit.
+  if (shieldActive && isWithinShield(enemy.x, enemy.y)) {
+    shieldHit();
+    if (enemy.shootInterval) {
+      clearInterval(enemy.shootInterval);
+    }
+    enemies.splice(i, 1);
+  } else {
+    // Otherwise, damage the player
+    if (enemy.type === "boss") {
+      health = 0;
+    }
+    health -= 30;
+    if (enemy.shootInterval) {
+      clearInterval(enemy.shootInterval);
+    }
+    enemies.splice(i, 1);
+    if (health <= 0) {
+      endGame();
+      return;
+    }
+  }
+}
+
       }
     }
     
@@ -1219,35 +1224,40 @@
         }
       }
       // Check enemy bullet collisions with player or shield
-      for (let i = enemyBullets.length - 1; i >= 0; i--) {
-        const bullet = enemyBullets[i];
-        if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < player.size / 2 + bullet.size) {
-          if (isInShieldZone(bullet.x, bullet.y) && shieldActive) {
-            shieldHit();
-            enemyBullets.splice(i, 1);
-          } else {
-            health -= health * 0.25;
-            enemyBullets.splice(i, 1);
-            if (health <= 0) {
-              endGame();
-            }
-          }
-        }
+       for (let i = enemyBullets.length - 1; i >= 0; i--) {
+    const bullet = enemyBullets[i];
+    let dist = Math.hypot(bullet.x - player.x, bullet.y - player.y);
+    const shieldRadius = player.size / 2 + 15; // same as in drawShield()
+
+    // If shield is active and the bullet is within the shield's radius
+    if (shieldActive && dist < shieldRadius) {
+      shieldHit(); // reduce shield durability
+      enemyBullets.splice(i, 1);
+    } else if (dist < player.size / 2 + bullet.size) {
+      // Otherwise, if the bullet hits the player (and shield is not intercepting)
+      health -= health * 0.25;
+      enemyBullets.splice(i, 1);
+      if (health <= 0) {
+        endGame();
       }
+    }
+  }
+}
       // Check boss bullets (inside enemy.bullets) collisions with player or shield
-      for (let enemy of enemies) {
-        if (enemy.type === "boss") {
-          for (let i = enemy.bullets.length - 1; i >= 0; i--) {
-            const bullet = enemy.bullets[i];
-            if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < player.size / 2 + bullet.size) {
-              if (isInShieldZone(bullet.x, bullet.y) && shieldActive) {
-                shieldHit();
-                enemy.bullets.splice(i, 1);
-              } else {
-                health -= health * 0.25;
-                enemy.bullets.splice(i, 1);
-                if (health <= 0) {
-                  endGame();
+    for (let enemy of enemies) {
+    if (enemy.type === "boss") {
+      for (let i = enemy.bullets.length - 1; i >= 0; i--) {
+        const bullet = enemy.bullets[i];
+        let dist = Math.hypot(bullet.x - player.x, bullet.y - player.y);
+        const shieldRadius = player.size / 2 + 15;
+        if (shieldActive && dist < shieldRadius) {
+          shieldHit();
+          enemy.bullets.splice(i, 1);
+        } else if (dist < player.size / 2 + bullet.size) {
+          health -= health * 0.25;
+          enemy.bullets.splice(i, 1);
+          if (health <= 0) {
+            endGame();
                 }
               }
             }
