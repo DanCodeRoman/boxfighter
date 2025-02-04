@@ -726,6 +726,8 @@
         welcomePhaseEndTime = performance.now() + 5000;
         document.getElementById("roundMessage").textContent = "Welcome Agent B-XFTR";
         document.getElementById("roundMessage").style.opacity = 1;
+        // Ensure challenge timer is hidden in zombies mode.
+        document.getElementById("challengeTimer").style.display = "none";
       } else {
         welcomePhase = false;
         document.getElementById("roundMessage").style.opacity = 0;
@@ -1306,7 +1308,7 @@
         let remaining = 300000 - elapsed;
         let minutes = Math.floor(remaining / 60000);
         let seconds = Math.floor((remaining % 60000) / 1000);
-        // Display timer only in challenge mode
+        // Update the challenge timer display only if in challenge mode
         document.getElementById("challengeTimer").textContent = `Time Left: ${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
       }
     }
@@ -1369,6 +1371,11 @@
     
     function gameLoop(timestamp) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Always hide the challenge timer element if not in challenge mode.
+      if (gameMode !== "challenge") {
+        document.getElementById("challengeTimer").style.display = "none";
+      }
       
       if (gameMode === "challenge" && !paused) {
         handleChallengeMode(timestamp);
