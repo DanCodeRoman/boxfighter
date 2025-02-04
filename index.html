@@ -636,7 +636,7 @@
     }
     
     // Pause game function.
-   function pauseGame() {
+  function pauseGame() {
     if (document.getElementById("gameOverScreen").style.display !== "none") {
         return;
     }
@@ -649,11 +649,11 @@
         document.getElementById("startMenu").style.display = "flex";
         document.getElementById("gameUI").style.display = "none";
         document.getElementById("challengeTimer").style.display = "none";
-        
-        // If in challenge mode, pause the timer
+
+        // Pause the challenge mode timer without resetting
         if (gameMode === "challenge") {
-            challengeTimerActive = false; // Stop the timer updates
-            challengePauseTimestamp = performance.now(); // Save when the pause happened
+            challengeTimerActive = false; // Stop the timer from updating
+            pausedTime = performance.now(); // Record when the pause happened
         }
     }
 }
