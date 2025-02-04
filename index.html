@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1008,10 +1009,6 @@
             bullet.y >= enemy.y - enemy.size / 2 &&
             bullet.y <= enemy.y + enemy.size / 2
           ) {
-            let damage = bullet.flamethrower ? 0.5 : 1; // Flamethrower bullets deal half damage
-            enemy.hitsRemaining -= damage;
-            player.bullets.splice(i, 1); // Remove bullet after hit
-
             if (enemy.type === "tank") {
               enemy.hitsRemaining--;
               player.bullets.splice(i, 1);
@@ -1479,7 +1476,7 @@
           enemy.size = 40;
           enemy.color = "darkblue";
           enemy.speed = 1.75;
-          enemy.hitsRemaining = 2.0;
+          enemy.hitsRemaining = 2;
           enemy.shootCooldown = 0;
           enemy.shootInterval = setInterval(() => {
             if (enemies.indexOf(enemy) !== -1) {
@@ -1492,7 +1489,7 @@
           enemy.size = 60;
           enemy.color = "yellow";
           enemy.speed = 1.25;
-          enemy.hitsRemaining = 5.0;
+          enemy.hitsRemaining = 5;
         } else if (type === "clone") {
           enemy.size = 30;
           enemy.color = "white";
@@ -1503,7 +1500,6 @@
           enemy.size = 30;
           enemy.color = "red";
           enemy.speed = 2.35;
-          enemy.hitsRemaining  = 1.0;
         }
         enemies.push(enemy);
       }
