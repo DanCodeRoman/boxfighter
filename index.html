@@ -350,6 +350,21 @@
       border-radius: 10px;
       user-select: none;
     }
+    /* Shield Cooldown Box */
+    #shieldCooldownBox {
+      position: fixed;
+      top: 50%;
+      left: 10px;
+      transform: translateY(-50%);
+      background-color: rgba(0, 0, 0, 0.7);
+      color: #00ffff;
+      padding: 10px 20px;
+      border: 2px solid #00ffff;
+      border-radius: 10px;
+      font-size: 20px;
+      z-index: 120;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -414,6 +429,10 @@
       <strong>Uzi</strong><br>
       (2000 Coins) - Burst fire of 5 bullets.
     </div>
+    <div class="gunOption" onclick="selectGun('shield')">
+      <strong>Shield</strong><br>
+      (5000 Coins) - Protects against enemy collisions and bullets.
+    </div>
     <button id="closeGunShop" onclick="closeGunShop()">Close</button>
   </div>
   <!-- Game Mode Modal -->
@@ -442,6 +461,8 @@
     <div class="bossHealthBar" id="bossHealthBar1"></div>
     <div class="bossHealthBar" id="bossHealthBar2" style="display:none;"></div>
   </div>
+  <!-- Shield Cooldown Box -->
+  <div id="shieldCooldownBox"></div>
   <canvas id="gameCanvas"></canvas>
   <div id="roundMessage"></div>
   
@@ -493,6 +514,14 @@
     
     // Gun selection: default "rifle" (one bullet per shot)
     let playerGun = "rifle";
+    // New shield ability flag
+    let shieldEquipped = false;
+    
+    // Shield state variables
+    let shieldActive = false;
+    let shieldDurability = 0;
+    let shieldCooldownActive = false;
+    let shieldCooldownStart = 0;
     
     // Global variable for pause state
     let paused = false;
@@ -652,12 +681,6 @@
           document.getElementById("startMenu").style.display = "flex";
           document.getElementById("gameUI").style.display = "none";
           document.getElementById("challengeTimer").style.display = "none";
-    
-          // For challenge mode, record the pause time.
-          if (gameMode === "challenge") {
-              challengeTimerActive = false;
-              pausedTime = performance.now();
-          }
       }
     }
     
@@ -816,6 +839,36 @@
       }
     }
     
+    // Draw the shield if active
+    function drawShield() {
+      if (shieldActive) {
+        let shieldAngle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x) - Math.PI/2;
+        let shieldCenterX = player.x + Math.cos(shieldAngle) * (player.size/2 + 5);
+        let shieldCenterY = player.y + Math.sin(shieldAngle) * (player.size/2 + 5);
+        let shieldLength = 40;
+        let x1 = shieldCenterX - Math.cos(shieldAngle) * shieldLength/2;
+        let y1 = shieldCenterY - Math.sin(shieldAngle) * shieldLength/2;
+        let x2 = shieldCenterX + Math.cos(shieldAngle) * shieldLength/2;
+        let y2 = shieldCenterY + Math.sin(shieldAngle) * shieldLength/2;
+        ctx.beginPath();
+        ctx.strokeStyle = getShieldColor();
+        ctx.lineWidth = 10;
+        ctx.shadowColor = getShieldColor();
+        ctx.shadowBlur = 20;
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+    }
+    
+    function getShieldColor() {
+      if (shieldDurability === 3) return "#00FFFF"; // neon blue
+      else if (shieldDurability === 2) return "yellow";
+      else if (shieldDurability === 1) return "red";
+      else return "#00FFFF";
+    }
+    
     // Update player's and enemy bullets.
     function updateBullets() {
       for (let i = player.bullets.length - 1; i >= 0; i--) {
@@ -910,6 +963,21 @@
       if (keys["d"] && player.x + player.size / 2 < canvas.width) player.x += speed;
     }
     
+    // Helper to normalize angle differences
+    function normalizeAngle(angle) {
+      while(angle > Math.PI) angle -= 2 * Math.PI;
+      while(angle < -Math.PI) angle += 2 * Math.PI;
+      return angle;
+    }
+    
+    // Check if a given point (x,y) is in the shield zone (front of player)
+    function isInShieldZone(x, y) {
+      let angleToPoint = Math.atan2(y - player.y, x - player.x);
+      let shieldAngle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x) - Math.PI/2;
+      let diff = Math.abs(normalizeAngle(angleToPoint - shieldAngle));
+      return diff < 0.785; // within 45 degrees
+    }
+    
     function updateEnemies() {
       for (let i = enemies.length - 1; i >= 0; i--) {
         const enemy = enemies[i];
@@ -932,23 +1000,33 @@
           enemy.x += Math.cos(angle) * enemy.speed;
           enemy.y += Math.sin(angle) * enemy.speed;
         }
+        // Check collision with player
         if (
           player.x + player.size/2 > enemy.x - enemy.size/2 &&
           player.x - player.size/2 < enemy.x + enemy.size/2 &&
           player.y + player.size/2 > enemy.y - enemy.size/2 &&
           player.y - player.size/2 < enemy.y + enemy.size/2
         ) {
-          if (enemy.type === "boss") {
-            health = 0;
-          }
-          health -= 30;
-          if (enemy.shootInterval) {
-            clearInterval(enemy.shootInterval);
-          }
-          enemies.splice(i, 1);
-          if (health <= 0) {
-            endGame();
-            return;
+          // If the enemy is coming from the front (shield zone) and shield is active, block the hit.
+          if (isInShieldZone(enemy.x, enemy.y) && shieldActive) {
+            shieldHit();
+            if (enemy.shootInterval) {
+              clearInterval(enemy.shootInterval);
+            }
+            enemies.splice(i, 1);
+          } else {
+            if (enemy.type === "boss") {
+              health = 0;
+            }
+            health -= 30;
+            if (enemy.shootInterval) {
+              clearInterval(enemy.shootInterval);
+            }
+            enemies.splice(i, 1);
+            if (health <= 0) {
+              endGame();
+              return;
+            }
           }
         }
       }
@@ -1136,27 +1214,37 @@
           }
         }
       }
+      // Check enemy bullet collisions with player or shield
       for (let i = enemyBullets.length - 1; i >= 0; i--) {
         const bullet = enemyBullets[i];
-        if (Math.hypot(bullet.x - player.x, bullet.y - player.y) <
-            player.size / 2 + bullet.size) {
-          health -= health * 0.25;
-          enemyBullets.splice(i, 1);
-          if (health <= 0) {
-            endGame();
+        if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < player.size / 2 + bullet.size) {
+          if (isInShieldZone(bullet.x, bullet.y) && shieldActive) {
+            shieldHit();
+            enemyBullets.splice(i, 1);
+          } else {
+            health -= health * 0.25;
+            enemyBullets.splice(i, 1);
+            if (health <= 0) {
+              endGame();
+            }
           }
         }
       }
+      // Check boss bullets (inside enemy.bullets) collisions with player or shield
       for (let enemy of enemies) {
         if (enemy.type === "boss") {
           for (let i = enemy.bullets.length - 1; i >= 0; i--) {
             const bullet = enemy.bullets[i];
-            if (Math.hypot(bullet.x - player.x, bullet.y - player.y) <
-                player.size / 2 + bullet.size) {
-              health -= health * 0.25;
-              enemy.bullets.splice(i, 1);
-              if (health <= 0) {
-                endGame();
+            if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < player.size / 2 + bullet.size) {
+              if (isInShieldZone(bullet.x, bullet.y) && shieldActive) {
+                shieldHit();
+                enemy.bullets.splice(i, 1);
+              } else {
+                health -= health * 0.25;
+                enemy.bullets.splice(i, 1);
+                if (health <= 0) {
+                  endGame();
+                }
               }
             }
           }
@@ -1167,8 +1255,7 @@
     function checkHealthBoostCollisions() {
       for (let i = healthBoosts.length - 1; i >= 0; i--) {
         const boost = healthBoosts[i];
-        if (Math.hypot(player.x - boost.x, player.y - boost.y) <
-            (player.size + boost.size) / 2) {
+        if (Math.hypot(player.x - boost.x, player.y - boost.y) < (player.size + boost.size) / 2) {
           health = Math.min(100, health + 20);
           healthBoosts.splice(i, 1);
         }
@@ -1178,8 +1265,7 @@
     function checkCoinCollisions() {
       for (let i = coinsOnField.length - 1; i >= 0; i--) {
         const coin = coinsOnField[i];
-        if (Math.hypot(player.x - coin.x, player.y - coin.y) <
-            (player.size + coin.size) / 2) {
+        if (Math.hypot(player.x - coin.x, player.y - coin.y) < (player.size + coin.size) / 2) {
           coinCount++;
           localStorage.setItem("coinCount", coinCount);
           updateCoinCounters();
@@ -1194,9 +1280,23 @@
       healthBarInner.style.backgroundColor = health > 50 ? "green" : "orange";
     }
     
+    // Shield hit processing
+    function shieldHit() {
+      shieldDurability--;
+      if (shieldDurability <= 0) {
+        shieldActive = false;
+        startShieldCooldown();
+      }
+    }
+    
+    function startShieldCooldown() {
+      shieldCooldownActive = true;
+      shieldCooldownStart = performance.now();
+      document.getElementById("shieldCooldownBox").style.display = "block";
+    }
+    
     // When the game ends, if in challenge mode, disable the timer
     function endGame() {
-      // If in challenge mode, ensure the timer stops
       if (gameMode === "challenge") {
         challengeTimerActive = false;
         document.getElementById("challengeTimer").style.display = "none";
@@ -1208,7 +1308,6 @@
     
     // Wave system for Zombies mode.
     function handleWaveLogic(timestamp) {
-      // Only run this logic in zombies mode.
       if (gameMode !== "zombies") {
         return;
       }
@@ -1285,7 +1384,6 @@
       if (!challengeTimerActive) {
         return;
       }
-      // If player has died, ensure timer stops.
       if (health <= 0) {
         challengeTimerActive = false;
         return;
@@ -1308,7 +1406,6 @@
         let remaining = 300000 - elapsed;
         let minutes = Math.floor(remaining / 60000);
         let seconds = Math.floor((remaining % 60000) / 1000);
-        // Update the challenge timer display only if in challenge mode
         document.getElementById("challengeTimer").textContent = `Time Left: ${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
       }
     }
@@ -1372,9 +1469,16 @@
     function gameLoop(timestamp) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Always hide the challenge timer element if not in challenge mode.
-      if (gameMode !== "challenge") {
-        document.getElementById("challengeTimer").style.display = "none";
+      // Update shield cooldown box if active
+      if (shieldCooldownActive) {
+        let elapsed = (performance.now() - shieldCooldownStart) / 1000;
+        let remaining = Math.max(0, 10 - elapsed);
+        let cooldownBox = document.getElementById("shieldCooldownBox");
+        cooldownBox.textContent = `Shield Cooldown: ${remaining.toFixed(1)}s`;
+        if (remaining <= 0) {
+          shieldCooldownActive = false;
+          cooldownBox.style.display = "none";
+        }
       }
       
       if (gameMode === "challenge" && !paused) {
@@ -1392,6 +1496,7 @@
       updateBossHealthBars();
       
       drawPlayer();
+      drawShield();
       drawEnemies();
       drawBullets();
       drawHealthBoosts();
@@ -1410,6 +1515,21 @@
         pauseGame();
       }
     });
+    
+    // Listen for spacebar to deploy shield if equipped and available
+    document.addEventListener("keydown", function(e) {
+      if (e.code === "Space") {
+        if (shieldEquipped && !shieldActive && !shieldCooldownActive) {
+          activateShield();
+        }
+      }
+    });
+    
+    // Activate shield function
+    function activateShield() {
+      shieldActive = true;
+      shieldDurability = 3;
+    }
     
     // Flamethrower gun variables and events
     let flamethrowerInterval = null;
@@ -1672,10 +1792,31 @@
     function selectGun(gun) {
       if (gun === "rifle") {
         playerGun = "rifle";
+        shieldEquipped = false;
         alert("Rifle equipped!");
+      } else if (gun === "shield") {
+        // Check if shield is already owned
+        if (ownedGuns.includes("shield")) {
+          shieldEquipped = true;
+          alert("Shield equipped! (Press Space to deploy)");
+        } else {
+          // Purchase shield for 5000 coins (5000/50 = 100 coins deducted)
+          if (coinCount * 50 >= 5000) {
+            coinCount -= 100;
+            localStorage.setItem("coinCount", coinCount);
+            updateCoinCounters();
+            shieldEquipped = true;
+            ownedGuns.push("shield");
+            localStorage.setItem("ownedGuns", JSON.stringify(ownedGuns));
+            alert("Shield purchased and equipped! (Press Space to deploy)");
+          } else {
+            alert("Not enough coins for Shield!");
+          }
+        }
       } else {
         if (ownedGuns.includes(gun)) {
           playerGun = gun;
+          shieldEquipped = false;
           alert(gun.charAt(0).toUpperCase() + gun.slice(1) + " equipped!");
         } else {
           if (gun === "shotgun") {
@@ -1684,6 +1825,7 @@
               localStorage.setItem("coinCount", coinCount);
               updateCoinCounters();
               playerGun = "shotgun";
+              shieldEquipped = false;
               ownedGuns.push("shotgun");
               localStorage.setItem("ownedGuns", JSON.stringify(ownedGuns));
               alert("Shotgun purchased and equipped!");
@@ -1696,6 +1838,7 @@
               localStorage.setItem("coinCount", coinCount);
               updateCoinCounters();
               playerGun = "flamethrower";
+              shieldEquipped = false;
               ownedGuns.push("flamethrower");
               localStorage.setItem("ownedGuns", JSON.stringify(ownedGuns));
               alert("Flamethrower purchased and equipped!");
@@ -1708,6 +1851,7 @@
               localStorage.setItem("coinCount", coinCount);
               updateCoinCounters();
               playerGun = "uzi";
+              shieldEquipped = false;
               ownedGuns.push("uzi");
               localStorage.setItem("ownedGuns", JSON.stringify(ownedGuns));
               alert("Uzi purchased and equipped!");
@@ -1739,7 +1883,6 @@
       coinsOnField = [];
       
       if (gameMode === "zombies") {
-        // Reset challenge timer variables so that any previous challenge data is cleared.
         challengeStartTime = 0;
         lastChallengeSpawnTime = 0;
         challengeTimerActive = false;
@@ -1751,14 +1894,12 @@
         document.getElementById("roundMessage").textContent = "Welcome Agent B-XFTR";
         document.getElementById("roundMessage").style.opacity = 1;
       } else if (gameMode === "challenge") {
-        // Hide zombie mode round messages.
         document.getElementById("roundMessage").style.opacity = 0;
         challengeStartTime = performance.now();
         lastChallengeSpawnTime = performance.now();
         challengeTimerActive = true;
       }
       
-      // If a game is already in progress, pause it before switching modes
       if (gameStarted) {
         pauseGame();
       }
