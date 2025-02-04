@@ -485,6 +485,9 @@
     let lastChallengeSpawnTime = 0;
     let challengeTimerActive = false;
     
+    // Global variable to track pause time (for Challenge Mode timer)
+    let pausedTime = 0;
+    
     // Load owned guns from localStorage; default to ["rifle"]
     let ownedGuns = JSON.parse(localStorage.getItem("ownedGuns")) || ["rifle"];
     
@@ -636,53 +639,50 @@
     }
     
     // Pause game function.
-  function pauseGame() {
-    if (document.getElementById("gameOverScreen").style.display !== "none") {
-        return;
+    function pauseGame() {
+      if (document.getElementById("gameOverScreen").style.display !== "none") {
+          return;
+      }
+      if (!paused) {
+          paused = true;
+          if (gameLoopId) {
+              cancelAnimationFrame(gameLoopId);
+          }
+          document.getElementById("bgMusic").pause();
+          document.getElementById("startMenu").style.display = "flex";
+          document.getElementById("gameUI").style.display = "none";
+          document.getElementById("challengeTimer").style.display = "none";
+    
+          // For challenge mode, record the pause time.
+          if (gameMode === "challenge") {
+              challengeTimerActive = false;
+              pausedTime = performance.now();
+          }
+      }
     }
-    if (!paused) {
-        paused = true;
-        if (gameLoopId) {
-            cancelAnimationFrame(gameLoopId);
-        }
-        document.getElementById("bgMusic").pause();
-        document.getElementById("startMenu").style.display = "flex";
-        document.getElementById("gameUI").style.display = "none";
-        document.getElementById("challengeTimer").style.display = "none";
-
-        // Pause the challenge mode timer without resetting
-        if (gameMode === "challenge") {
-            challengeTimerActive = false; // Stop the timer from updating
-            pausedTime = performance.now(); // Record when the pause happened
-        }
-    }
-}
-
     
     // When starting the game, include a 5‑second welcome phase (for Zombies mode)
     function startGame() {
       const canvas = document.getElementById("gameCanvas");
       canvas.style.cursor = "url('https://i.postimg.cc/gk1NVmNN/output-onlinepngtools.png') 30 30, crosshair";
-      if (gameMode === "challenge") {
-  challengeStartTime = performance.now();
-  lastChallengeSpawnTime = performance.now();
-  challengeTimerActive = true;
-  document.getElementById("challengeTimer").style.display = "block";
-} else {
-  document.getElementById("challengeTimer").style.display = "none";
-}
       
+      // If resuming from a pause:
       if (paused) {
         paused = false;
         document.getElementById("startMenu").style.display = "none";
         document.getElementById("gameUI").style.display = "block";
         if (gameMode === "challenge") {
+          // Adjust challengeStartTime by the pause duration.
+          let pauseDuration = performance.now() - pausedTime;
+          challengeStartTime += pauseDuration;
           document.getElementById("challengeTimer").style.display = "block";
+          challengeTimerActive = true;
         }
         document.getElementById("bgMusic").play();
         gameLoop();
         return;
       }
+    
       if (gameLoopId) {
         cancelAnimationFrame(gameLoopId);
       }
@@ -722,22 +722,20 @@
       waveStarted = false;
       enemiesSpawnedForWave = false;
       if (gameMode !== "challenge") {
-  welcomePhase = true;
-  welcomePhaseEndTime = performance.now() + 5000;
-  document.getElementById("roundMessage").textContent = "Welcome Agent B-XFTR";
-  document.getElementById("roundMessage").style.opacity = 1;
-} else {
-  welcomePhase = false;
-  document.getElementById("roundMessage").style.opacity = 0;
-  
-   challengeStartTime = performance.now();
-    lastChallengeSpawnTime = performance.now();
-    challengeTimerActive = true;
-    document.getElementById("challengeTimer").style.display = "block";
-  
-}
+        welcomePhase = true;
+        welcomePhaseEndTime = performance.now() + 5000;
+        document.getElementById("roundMessage").textContent = "Welcome Agent B-XFTR";
+        document.getElementById("roundMessage").style.opacity = 1;
+      } else {
+        welcomePhase = false;
+        document.getElementById("roundMessage").style.opacity = 0;
+        
+        challengeStartTime = performance.now();
+        lastChallengeSpawnTime = performance.now();
+        challengeTimerActive = true;
+        document.getElementById("challengeTimer").style.display = "block";
+      }
       gameStarted = true;
-      // If Challenge Mode is selected, initialize challenge timer and hide wave-specific UI.
       if (gameMode === "challenge") {
         challengeStartTime = performance.now();
         lastChallengeSpawnTime = performance.now();
@@ -1201,6 +1199,10 @@
     
     // Wave system for Zombies mode.
     function handleWaveLogic(timestamp) {
+      // Only run this logic in zombies mode.
+      if (gameMode !== "zombies") {
+        return;
+      }
       if (welcomePhase) {
         if (timestamp >= welcomePhaseEndTime) {
           welcomePhase = false;
@@ -1272,8 +1274,8 @@
     // Challenge Mode functions.
     function handleChallengeMode(timestamp) {
       if (!challengeTimerActive) {
-    return;
-  }
+        return;
+      }
       let elapsed = timestamp - challengeStartTime;
       if (elapsed >= 300000) { // 5 minutes
         enemies = [];
@@ -1356,10 +1358,10 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
       if (gameMode === "challenge" && !paused) {
-    handleChallengeMode(timestamp);
-  } else {
-    handleWaveLogic(timestamp);
-  }
+        handleChallengeMode(timestamp);
+      } else {
+        handleWaveLogic(timestamp);
+      }
       updatePlayer();
       updateBullets();
       updateEnemies();
@@ -1708,39 +1710,37 @@
     }
     
     function selectGameMode(mode) {
-  gameMode = mode;
-  
-  // If switching game modes, clear zombie-mode entities:
-  enemies = [];
-  enemyBullets = [];
-  healthBoosts = [];
-  coinsOnField = [];
-  
-  if (gameMode === "zombies") {
-    roundNumber = 1;
-    nextWaveTime = performance.now();
-    welcomePhase = true;
-    // Optionally, set the welcome phase message:
-    welcomePhaseEndTime = performance.now() + 5000;
-    document.getElementById("roundMessage").textContent = "Welcome Agent B-XFTR";
-    document.getElementById("roundMessage").style.opacity = 1;
-  }
-  
-  if (gameMode === "challenge") {
-    challengeStartTime = performance.now();
-    lastChallengeSpawnTime = performance.now();
-    challengeTimerActive = true;
-  }
-  
-  
-  // If a game is already in progress, pause it before switching modes
-  if (gameStarted) {
-    pauseGame();
-  }
-  
-  closeGameMode();
-  alert("Game mode switched to " + (mode === "zombies" ? "Zombies" : "Challenge Mode") + ". Ready up to start.");
-}
+      gameMode = mode;
+      
+      // Clear any zombie-mode entities:
+      enemies = [];
+      enemyBullets = [];
+      healthBoosts = [];
+      coinsOnField = [];
+      
+      if (gameMode === "zombies") {
+        roundNumber = 1;
+        nextWaveTime = performance.now();
+        welcomePhase = true;
+        welcomePhaseEndTime = performance.now() + 5000;
+        document.getElementById("roundMessage").textContent = "Welcome Agent B-XFTR";
+        document.getElementById("roundMessage").style.opacity = 1;
+      } else if (gameMode === "challenge") {
+        // Hide zombie mode round messages.
+        document.getElementById("roundMessage").style.opacity = 0;
+        challengeStartTime = performance.now();
+        lastChallengeSpawnTime = performance.now();
+        challengeTimerActive = true;
+      }
+      
+      // If a game is already in progress, pause it before switching modes
+      if (gameStarted) {
+        pauseGame();
+      }
+      
+      closeGameMode();
+      alert("Game mode switched to " + (mode === "zombies" ? "Zombies" : "Challenge Mode") + ". Ready up to start.");
+    }
     
   </script>
 </body>
