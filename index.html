@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -74,6 +73,25 @@
     #menuGunShopButton:active {
       transform: scale(1.05);
     }
+    /* Game Mode Button (Main Menu) */
+    #gameModeButton {
+      font-size: 20px;
+      padding: 10px 20px;
+      background-color: #344;
+      border: 2px solid white;
+      color: white;
+      cursor: pointer;
+      border-radius: 50px;
+      transition: transform 0.5s ease, background-color 0.5s ease;
+      margin-top: 15px;
+    }
+    #gameModeButton:hover {
+      background-color: #ff6b6b;
+      transform: scale(1.2);
+    }
+    #gameModeButton:active {
+      transform: scale(1.05);
+    }
     /* Animated Title (Box Fighter) */
     h1 {
       font-size: 80px;
@@ -84,18 +102,11 @@
       animation: gradient-text 3s linear infinite, pulsate 2s ease-in-out infinite;
       margin-bottom: 30px;
     }
-
     @keyframes pulsate {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
     @keyframes gradient-text {
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
@@ -282,7 +293,7 @@
       user-select: none;
     }
     /* Gun Shop Modal Styles */
-    #gunShopModal {
+    #gunShopModal, #gameModeModal {
       position: fixed;
       top: 50%;
       left: 50%;
@@ -297,10 +308,10 @@
       text-align: center;
       width: 300px;
     }
-    #gunShopModal h2 {
+    #gunShopModal h2, #gameModeModal h2 {
       margin-top: 0;
     }
-    .gunOption {
+    .gunOption, .gameModeOption {
       border: 2px solid white;
       border-radius: 8px;
       padding: 10px;
@@ -308,10 +319,10 @@
       cursor: pointer;
       transition: background 0.3s ease;
     }
-    .gunOption:hover {
+    .gunOption:hover, .gameModeOption:hover {
       background: #444;
     }
-    #closeGunShop {
+    #closeGunShop, #closeGameMode {
       margin-top: 15px;
       padding: 5px 10px;
       border: none;
@@ -319,6 +330,16 @@
       color: white;
       cursor: pointer;
       border-radius: 5px;
+    }
+    /* Challenge Mode Timer styling */
+    #challengeTimer {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 20px;
+      color: white;
+      z-index: 20;
+      display: none;
     }
   </style>
 </head>
@@ -339,6 +360,8 @@
     <!-- Studios Text -->
     <div id="studiosText">DanCodeRoman Studios</div>
     <button onclick="startGame()">Ready Up</button>
+    <!-- Game Mode Button -->
+    <button id="gameModeButton" onclick="openGameModeBox()">Game Mode</button>
     <!-- Gun Shop Button (Main Menu) -->
     <button id="menuGunShopButton" onclick="openGunShop()">Gun Shop</button>
     <div id="colorPickerContainer">
@@ -384,12 +407,27 @@
     </div>
     <button id="closeGunShop" onclick="closeGunShop()">Close</button>
   </div>
+  <!-- Game Mode Modal -->
+  <div id="gameModeModal">
+    <h2>Select Game Mode</h2>
+    <div class="gameModeOption" onclick="selectGameMode('zombies')">
+      <strong>Zombies</strong>
+      <p>Classic waves of enemies with increasing difficulty.</p>
+    </div>
+    <div class="gameModeOption" onclick="selectGameMode('challenge')">
+      <strong>Challenge Mode</strong>
+      <p>Survive a continuous enemy onslaught for 5 minutes! New enemies spawn every second.</p>
+    </div>
+    <button id="closeGameMode" onclick="closeGameMode()">Close</button>
+  </div>
   <div id="gameUI" style="display: none;">
     <div id="healthBar">
       <div id="healthBarInner"></div>
     </div>
     <p id="score" style="user-select: none;">Score: 0</p>
   </div>
+  <!-- Challenge Mode Timer -->
+  <p id="challengeTimer"></p>
   <!-- Boss Health Bars Container -->
   <div id="bossHealthBarContainer">
     <div class="bossHealthBar" id="bossHealthBar1"></div>
@@ -419,7 +457,7 @@
     // Global array for shooter enemy bullets (so they persist after shooter dies)
     let enemyBullets = [];
     
-    // Wave timing variables
+    // Wave timing variables (for Zombies mode)
     let roundNumber = 1;
     let nextWaveTime = performance.now();
     const waveInterval = 15000; // total duration for each wave cycle (ms)
@@ -431,6 +469,12 @@
     // Welcome phase variables (5 seconds)
     let welcomePhase = true;
     let welcomePhaseEndTime = 0;
+    
+    // Challenge Mode variables
+    let gameMode = "zombies"; // default game mode
+    let challengeStartTime = 0;
+    let lastChallengeSpawnTime = 0;
+    let challengeTimerActive = false;
     
     // Load owned guns from localStorage; default to ["rifle"]
     let ownedGuns = JSON.parse(localStorage.getItem("ownedGuns")) || ["rifle"];
@@ -472,7 +516,6 @@
     // Update mouse position on move
     document.addEventListener("mousemove", (e) => {
       mousePos = { x: e.clientX, y: e.clientY };
-      // Also update the colorPreview drop-shadow if needed (handled in colorPicker below)
     });
     
     const colorPicker = document.getElementById("playerColor");
@@ -491,8 +534,7 @@
     function playEnemyKillSound() {
       const soundClone = enemyKillSound.cloneNode();
       soundClone.volume = 1.0;
-      soundClone.play().then(() => {
-      });
+      soundClone.play().then(() => {});
     }
     
     // Create and optimize shoot sound helper using an audio pool.
@@ -597,11 +639,12 @@
         document.getElementById("bgMusic").pause();
         document.getElementById("startMenu").style.display = "flex";
         document.getElementById("gameUI").style.display = "none";
+        document.getElementById("challengeTimer").style.display = "none";
         console.log("Game paused");
       }
     }
     
-    // When starting the game, include a 5‑second welcome phase.
+    // When starting the game, include a 5‑second welcome phase (for Zombies mode)
     function startGame() {
       const canvas = document.getElementById("gameCanvas");
       canvas.style.cursor = "url('https://i.postimg.cc/gk1NVmNN/output-onlinepngtools.png') 30 30, crosshair";
@@ -609,6 +652,9 @@
         paused = false;
         document.getElementById("startMenu").style.display = "none";
         document.getElementById("gameUI").style.display = "block";
+        if (gameMode === "challenge") {
+          document.getElementById("challengeTimer").style.display = "block";
+        }
         document.getElementById("bgMusic").play();
         gameLoop();
         return;
@@ -646,18 +692,25 @@
       enemies = [];
       healthBoosts = [];
       coinsOnField = [];
-      // Clear enemy bullets on restart.
       enemyBullets = [];
       roundNumber = 1;
       nextWaveTime = performance.now();
       waveStarted = false;
       enemiesSpawnedForWave = false;
-      // Set up the welcome phase for 5 seconds
       welcomePhase = true;
       welcomePhaseEndTime = performance.now() + 5000;
       document.getElementById("roundMessage").textContent = "Welcome Agent B-XFTR";
       document.getElementById("roundMessage").style.opacity = 1;
       gameStarted = true;
+      // If Challenge Mode is selected, initialize challenge timer and hide wave-specific UI.
+      if (gameMode === "challenge") {
+        challengeStartTime = performance.now();
+        lastChallengeSpawnTime = performance.now();
+        challengeTimerActive = true;
+        document.getElementById("challengeTimer").style.display = "block";
+      } else {
+        document.getElementById("challengeTimer").style.display = "none";
+      }
       displayLeaderboard();
       gameLoop();
     }
@@ -667,7 +720,6 @@
     }
     
     function spawnHealthBoost() {
-      // Health boosts now use "hotpink" for better contrast.
       if (Math.random() < 0.25) {
         healthBoosts.push({
           x: Math.random() * canvas.width,
@@ -690,24 +742,19 @@
     }
     
     // Draw the player ship.
-    // The ship is drawn from the center and rotated so its top faces the mouse.
     function drawPlayer() {
-      // Compute the angle from the ship to the mouse.
-      // Subtract Math.PI/2 so the top of the ship (image orientation) points to the mouse.
       let angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x) - Math.PI/2;
       ctx.save();
       ctx.translate(player.x, player.y);
       ctx.rotate(angle);
       ctx.shadowColor = player.color;
       ctx.shadowBlur = 50;
-      // Draw the ship image centered at (0,0)
       ctx.drawImage(playerImage, -player.size/2, -player.size/2, player.size, player.size);
       ctx.restore();
     }
     
     function drawEnemies() {
       for (let enemy of enemies) {
-        // Boss/tank/shooter use specific colors; clone enemies are drawn white; melee remain red.
         ctx.shadowColor = enemy.type === "boss" ? "white" :
                           enemy.type === "tank" ? "yellow" : 
                           enemy.type === "clone" ? "white" : "red";
@@ -720,7 +767,6 @@
           enemy.size
         );
         ctx.shadowBlur = 5;
-        // For boss enemies, draw their bullets (boss bullets are stored in enemy.bullets)
         if (enemy.type === "boss") {
           for (let bullet of enemy.bullets) {
             ctx.fillStyle = "purple";
@@ -736,52 +782,33 @@
     
     // Update player's and enemy bullets.
     function updateBullets() {
-      // Update player's bullets.
       for (let i = player.bullets.length - 1; i >= 0; i--) {
         const bullet = player.bullets[i];
-        // Check for lifetime (for flamethrower bullets)
         if (bullet.lifetime && performance.now() - bullet.creationTime >= bullet.lifetime) {
           player.bullets.splice(i, 1);
           continue;
         }
         bullet.x += bullet.dx;
         bullet.y += bullet.dy;
-        if (
-          bullet.x < 0 ||
-          bullet.x > canvas.width ||
-          bullet.y < 0 ||
-          bullet.y > canvas.height
-        ) {
+        if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
           player.bullets.splice(i, 1);
         }
       }
-      // Update global enemy bullets (from shooter enemies and transferred boss bullets).
       for (let i = enemyBullets.length - 1; i >= 0; i--) {
         const bullet = enemyBullets[i];
         bullet.x += bullet.dx;
         bullet.y += bullet.dy;
-        if (
-          bullet.x < 0 ||
-          bullet.x > canvas.width ||
-          bullet.y < 0 ||
-          bullet.y > canvas.height
-        ) {
+        if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
           enemyBullets.splice(i, 1);
         }
       }
-      // Update boss enemy bullets (stored in enemy.bullets) for bosses still alive.
       for (let enemy of enemies) {
         if (enemy.type === "boss") {
           for (let i = enemy.bullets.length - 1; i >= 0; i--) {
             const bullet = enemy.bullets[i];
             bullet.x += bullet.dx;
             bullet.y += bullet.dy;
-            if (
-              bullet.x < 0 ||
-              bullet.x > canvas.width ||
-              bullet.y < 0 ||
-              bullet.y > canvas.height
-            ) {
+            if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
               enemy.bullets.splice(i, 1);
             }
           }
@@ -797,8 +824,6 @@
         ctx.beginPath();
         ctx.arc(boost.x, boost.y, boost.size, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowColor = "green";
-        ctx.shadowBlur = 5;
       }
     }
     
@@ -810,12 +835,9 @@
         ctx.beginPath();
         ctx.arc(coin.x, coin.y, coin.size, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowColor = "gold";
-        ctx.shadowBlur = 5;
       }
     }
     
-    // Draw player's bullets. Flamethrower bullets are drawn larger and filled red.
     function drawBullets() {
       for (let bullet of player.bullets) {
         if (bullet.flamethrower) {
@@ -825,8 +847,6 @@
           ctx.beginPath();
           ctx.arc(bullet.x, bullet.y, 10, 0, Math.PI * 2);
           ctx.fill();
-          ctx.shadowColor = "red";
-          ctx.shadowBlur = 8;
         } else {
           ctx.shadowColor = "red";
           ctx.shadowBlur = 8;
@@ -834,11 +854,8 @@
           ctx.beginPath();
           ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2);
           ctx.fill();
-          ctx.shadowColor = "red";
-          ctx.shadowBlur = 8;
         }
       }
-      // Draw enemy bullets (from shooter enemies and transferred boss bullets).
       for (let bullet of enemyBullets) {
         ctx.shadowColor = "darkblue";
         ctx.shadowBlur = 8;
@@ -846,22 +863,16 @@
         ctx.beginPath();
         ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowColor = "darkblue";
-        ctx.shadowBlur = 8;
       }
     }
     
     function updatePlayer() {
-  
-  let speed = 3; // Reduced speed
-
-  if (keys["w"] && player.y - player.size / 2 > 0) player.y -= speed;
-  if (keys["s"] && player.y + player.size / 2 < canvas.height) player.y += speed;
-  if (keys["a"] && player.x - player.size / 2 > 0) player.x -= speed;
-  if (keys["d"] && player.x + player.size / 2 < canvas.width) player.x += speed;
-}
-
-
+      let speed = 3;
+      if (keys["w"] && player.y - player.size / 2 > 0) player.y -= speed;
+      if (keys["s"] && player.y + player.size / 2 < canvas.height) player.y += speed;
+      if (keys["a"] && player.x - player.size / 2 > 0) player.x -= speed;
+      if (keys["d"] && player.x + player.size / 2 < canvas.width) player.x += speed;
+    }
     
     function updateEnemies() {
       for (let i = enemies.length - 1; i >= 0; i--) {
@@ -885,7 +896,6 @@
           enemy.x += Math.cos(angle) * enemy.speed;
           enemy.y += Math.sin(angle) * enemy.speed;
         }
-        // Collision: check if player's rectangle overlaps enemy's full rectangle.
         if (
           player.x + player.size/2 > enemy.x - enemy.size/2 &&
           player.x - player.size/2 < enemy.x + enemy.size/2 &&
@@ -896,7 +906,6 @@
             health = 0;
           }
           health -= 30;
-          // If enemy is a shooter, clear its shooting interval.
           if (enemy.shootInterval) {
             clearInterval(enemy.shootInterval);
           }
@@ -909,7 +918,7 @@
       }
     }
     
-    // Shooter enemies already use shootAtPlayer (which pushes bullets into enemyBullets).
+    // Shooter enemy shooting functions
     function shootAtPlayer(enemy) {
       const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
       const bullet = {
@@ -927,10 +936,7 @@
       }
     }
     
-    // NEW: Boss enemy special shooting.
-    // The boss will both shoot one bullet at the player and fire a ring of bullets.
     function bossShoot(enemy) {
-      // Aim a bullet at the player.
       const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
       const aimedBullet = {
         x: enemy.x,
@@ -941,7 +947,6 @@
         color: "purple"
       };
       enemy.bullets.push(aimedBullet);
-      // Fire a ring of bullets.
       const bulletCount = 12;
       const bulletSpeed = 4;
       for (let i = 0; i < bulletCount; i++) {
@@ -958,12 +963,9 @@
       }
     }
     
-    // When a boss enemy is created, initialize its shooting.
     function initBoss(enemy) {
-      // Aimed shot interval (fire faster, e.g., every 1500ms)
       enemy.aimedShootInterval = setInterval(() => {
         if (enemies.indexOf(enemy) !== -1) {
-          // Fire aimed bullet at the player
           const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
           const aimedBullet = {
             x: enemy.x,
@@ -979,7 +981,6 @@
         }
       }, 1500);
     
-      // Ring shot interval remains at 3000ms
       enemy.ringShootInterval = setInterval(() => {
         if (enemies.indexOf(enemy) !== -1) {
           const bulletCount = 12;
@@ -1003,7 +1004,6 @@
     }
     
     function checkBulletCollisions() {
-      // Check player's bullets vs enemy hitboxes.
       for (let i = player.bullets.length - 1; i >= 0; i--) {
         const bullet = player.bullets[i];
         for (let j = enemies.length - 1; j >= 0; j--) {
@@ -1024,21 +1024,20 @@
                 playEnemyKillSound();
               }
               break;
-              } else if (enemy.type === "shooter") {  // NEW: Shooters need 2 hits
-          enemy.hitsRemaining--;
-          player.bullets.splice(i, 1);
-          if (enemy.hitsRemaining <= 0) {
-            score += 10;
-            enemies.splice(j, 1);
-            playEnemyKillSound();
-          }
+            } else if (enemy.type === "shooter") {
+              enemy.hitsRemaining--;
+              player.bullets.splice(i, 1);
+              if (enemy.hitsRemaining <= 0) {
+                score += 10;
+                enemies.splice(j, 1);
+                playEnemyKillSound();
+              }
             } else if (enemy.type === "boss") {
               enemy.hitsRemaining--;
               player.bullets.splice(i, 1);
               if (enemy.hitsRemaining <= 0) {
                 score += 50;
                 clearInterval(enemy.shootInterval);
-                // Transfer the boss's remaining bullets into the global enemyBullets array
                 enemyBullets.push(...enemy.bullets);
                 enemy.bullets = [];
                 enemies.splice(j, 1);
@@ -1076,8 +1075,7 @@
                   dy: Math.sin(baseAngle - 0.3) * splitSpeed
                 };
                 enemies.splice(j, 1);
-                enemies.push(clone1);
-                enemies.push(clone2);
+                enemies.push(clone1, clone2);
                 score += 15;
                 health = Math.min(100, health + 5);
                 player.bullets.splice(i, 1);
@@ -1102,13 +1100,10 @@
           }
         }
       }
-      // Check collisions between global enemy bullets and the player.
       for (let i = enemyBullets.length - 1; i >= 0; i--) {
         const bullet = enemyBullets[i];
-        if (
-          Math.hypot(bullet.x - player.x, bullet.y - player.y) <
-          player.size / 2 + bullet.size
-        ) {
+        if (Math.hypot(bullet.x - player.x, bullet.y - player.y) <
+            player.size / 2 + bullet.size) {
           health -= health * 0.25;
           enemyBullets.splice(i, 1);
           if (health <= 0) {
@@ -1116,15 +1111,12 @@
           }
         }
       }
-      // Check boss enemy bullets.
       for (let enemy of enemies) {
         if (enemy.type === "boss") {
           for (let i = enemy.bullets.length - 1; i >= 0; i--) {
             const bullet = enemy.bullets[i];
-            if (
-              Math.hypot(bullet.x - player.x, bullet.y - player.y) <
-              player.size / 2 + bullet.size
-            ) {
+            if (Math.hypot(bullet.x - player.x, bullet.y - player.y) <
+                player.size / 2 + bullet.size) {
               health -= health * 0.25;
               enemy.bullets.splice(i, 1);
               if (health <= 0) {
@@ -1139,10 +1131,8 @@
     function checkHealthBoostCollisions() {
       for (let i = healthBoosts.length - 1; i >= 0; i--) {
         const boost = healthBoosts[i];
-        if (
-          Math.hypot(player.x - boost.x, player.y - boost.y) <
-          (player.size + boost.size) / 2
-        ) {
+        if (Math.hypot(player.x - boost.x, player.y - boost.y) <
+            (player.size + boost.size) / 2) {
           health = Math.min(100, health + 20);
           healthBoosts.splice(i, 1);
         }
@@ -1152,10 +1142,8 @@
     function checkCoinCollisions() {
       for (let i = coinsOnField.length - 1; i >= 0; i--) {
         const coin = coinsOnField[i];
-        if (
-          Math.hypot(player.x - coin.x, player.y - coin.y) <
-          (player.size + coin.size) / 2
-        ) {
+        if (Math.hypot(player.x - coin.x, player.y - coin.y) <
+            (player.size + coin.size) / 2) {
           coinCount++;
           localStorage.setItem("coinCount", coinCount);
           updateCoinCounters();
@@ -1176,13 +1164,12 @@
       updateLeaderboard(score);
     }
     
-    // Wave system with welcome phase and wave messages.
+    // Wave system for Zombies mode.
     function handleWaveLogic(timestamp) {
-      // During welcome phase, show the welcome message.
       if (welcomePhase) {
         if (timestamp >= welcomePhaseEndTime) {
           welcomePhase = false;
-          nextWaveTime = timestamp; // start wave logic immediately after welcome
+          nextWaveTime = timestamp;
           waveStarted = false;
           enemiesSpawnedForWave = false;
         } else {
@@ -1191,7 +1178,6 @@
           return;
         }
       }
-      // Normal wave logic.
       if (timestamp >= nextWaveTime) {
         if (!waveStarted) {
           waveStartTime = timestamp;
@@ -1205,7 +1191,6 @@
         }
         if (timestamp >= waveStartTime + waveMessageDuration && !enemiesSpawnedForWave) {
           if (roundNumber === 5) {
-            // Create boss enemy with shooting functionality.
             let bossEnemy = {
               x: canvas.width / 2,
               y: canvas.height / 4,
@@ -1222,7 +1207,6 @@
             spawnEnemies();
             spawnHealthBoost();
             spawnCoin();
-            // After round 10, extra boss chance.
             if (roundNumber > 10 && Math.random() < 0.3) {
               let extraBoss = {
                 x: canvas.width / 2,
@@ -1250,11 +1234,94 @@
       }
     }
     
+    // Challenge Mode functions.
+    function handleChallengeMode(timestamp) {
+      let elapsed = timestamp - challengeStartTime;
+      if (elapsed >= 300000) { // 5 minutes
+        enemies = [];
+        enemyBullets = [];
+        document.getElementById("roundMessage").textContent = "You Win!";
+        document.getElementById("roundMessage").style.opacity = 1;
+        challengeTimerActive = false;
+        setTimeout(() => {
+          endChallengeMode();
+        }, 10000);
+      } else {
+        if (timestamp - lastChallengeSpawnTime >= 1000) {
+          spawnSingleEnemy();
+          lastChallengeSpawnTime = timestamp;
+        }
+        let remaining = 300000 - elapsed;
+        let minutes = Math.floor(remaining / 60000);
+        let seconds = Math.floor((remaining % 60000) / 1000);
+        document.getElementById("challengeTimer").textContent = `Time Left: ${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
+      }
+    }
+    
+    function spawnSingleEnemy() {
+      const types = ["melee", "shooter", "tank", "clone", "boss"];
+      const type = types[Math.floor(Math.random() * types.length)];
+      const pos = getRandomSpawnPosition(100);
+      let enemy = {
+        x: pos.x,
+        y: pos.y,
+        type: type,
+        dx: 0,
+        dy: 0,
+        bullets: []
+      };
+      if (type === "shooter") {
+        enemy.size = 40;
+        enemy.color = "darkblue";
+        enemy.speed = 1.75;
+        enemy.hitsRemaining = 2;
+        enemy.shootCooldown = 0;
+        enemy.shootInterval = setInterval(() => {
+          if (enemies.indexOf(enemy) !== -1) {
+            shootAtPlayer(enemy);
+          } else {
+            clearInterval(enemy.shootInterval);
+          }
+        }, 800);
+      } else if (type === "tank") {
+        enemy.size = 60;
+        enemy.color = "yellow";
+        enemy.speed = 1.25;
+        enemy.hitsRemaining = 5;
+      } else if (type === "clone") {
+        enemy.size = 30;
+        enemy.color = "white";
+        enemy.speed = 2.35;
+        enemy.canClone = true;
+        enemy.isSplitting = false;
+      } else if (type === "boss") {
+        enemy.size = 120;
+        enemy.color = "darkred";
+        enemy.speed = 2.35;
+        enemy.hitsRemaining = 85;
+        initBoss(enemy);
+      } else { // melee
+        enemy.size = 30;
+        enemy.color = "red";
+        enemy.speed = 2.35;
+      }
+      enemies.push(enemy);
+    }
+    
+    function endChallengeMode() {
+      pauseGame();
+      document.getElementById("roundMessage").style.opacity = 0;
+      challengeTimerActive = false;
+    }
+    
     function gameLoop(timestamp) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Handle welcome phase / wave messaging and enemy spawning.
-      handleWaveLogic(timestamp);
+      if (gameMode === "challenge") {
+        handleChallengeMode(timestamp);
+      } else {
+        handleWaveLogic(timestamp);
+      }
       
       updatePlayer();
       updateBullets();
@@ -1285,12 +1352,10 @@
       }
     });
     
-    // Variables and functions for the flamethrower gun
+    // Flamethrower gun variables and events
     let flamethrowerInterval = null;
-    // Store the last known mouse/touch position (used to aim the flamethrower)
     let lastMousePos = { x: player.x, y: player.y };
     
-    // For non-flamethrower guns, the normal click event is used.
     canvas.addEventListener("click", (e) => {
       if (playerGun !== "flamethrower") {
         playShootSound();
@@ -1339,7 +1404,6 @@
       }
     });
     
-    // For flamethrower, use mousedown/mouseup for continuous firing.
     canvas.addEventListener("mousedown", function(e) {
       if (playerGun === "flamethrower") {
         lastMousePos = { x: e.clientX, y: e.clientY };
@@ -1360,7 +1424,6 @@
       }
     });
     
-    // For touch devices: override touch events when using the flamethrower.
     canvas.addEventListener("touchstart", (e) => {
       e.preventDefault();
       if (playerGun === "flamethrower") {
@@ -1432,13 +1495,10 @@
       }
     });
     
-    // Function for the flamethrower: continuously fires a fan of 5 red bullets.
     function shootFlame() {
-      // Determine the base angle from the player toward the last pointer position.
       let baseAngle = Math.atan2(lastMousePos.y - player.y, lastMousePos.x - player.x) || 0;
-      const spread = 0.2; // angle offset between bullets
-      const speed = 4;   // slower speed for short range
-      // Shoot 5 bullets in a fan (from -2 to +2 offsets)
+      const spread = 0.2;
+      const speed = 4;
       for (let i = -2; i <= 2; i++) {
         let bulletAngle = baseAngle + i * spread;
         player.bullets.push({
@@ -1446,15 +1506,14 @@
           y: player.y,
           dx: Math.cos(bulletAngle) * speed,
           dy: Math.sin(bulletAngle) * speed,
-          lifetime: 500, // bullet disappears after 1 second
+          lifetime: 500,
           creationTime: performance.now(),
           flamethrower: true
         });
       }
     }
     
-    // Modified spawnEnemies to include clone enemies (chance when roundNumber >= 5).
-    // Clone enemies are drawn white.
+    // Modified spawnEnemies for Zombies mode.
     function spawnEnemies() {
       let numberOfEnemies = 8 + roundNumber - 1;
       for (let i = 0; i < numberOfEnemies; i++) {
@@ -1601,6 +1660,25 @@
       }
       closeGunShop();
     }
+    
+    // Game Mode Modal functions.
+    function openGameModeBox() {
+      document.getElementById("gameModeModal").style.display = "block";
+    }
+    
+    function closeGameMode() {
+      document.getElementById("gameModeModal").style.display = "none";
+    }
+    
+    function selectGameMode(mode) {
+      gameMode = mode;
+      if (gameStarted) {
+        pauseGame();
+      }
+      closeGameMode();
+      alert("Game mode switched to " + (mode === "zombies" ? "Zombies" : "Challenge Mode") + ". Ready up to start.");
+    }
+    
   </script>
 </body>
 </html>
