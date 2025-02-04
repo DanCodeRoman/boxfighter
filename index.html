@@ -700,10 +700,15 @@
       nextWaveTime = performance.now();
       waveStarted = false;
       enemiesSpawnedForWave = false;
-      welcomePhase = true;
-      welcomePhaseEndTime = performance.now() + 5000;
-      document.getElementById("roundMessage").textContent = "Welcome Agent B-XFTR";
-      document.getElementById("roundMessage").style.opacity = 1;
+      if (gameMode !== "challenge") {
+  welcomePhase = true;
+  welcomePhaseEndTime = performance.now() + 5000;
+  document.getElementById("roundMessage").textContent = "Welcome Agent B-XFTR";
+  document.getElementById("roundMessage").style.opacity = 1;
+} else {
+  welcomePhase = false;
+  document.getElementById("roundMessage").style.opacity = 0;
+}
       gameStarted = true;
       // If Challenge Mode is selected, initialize challenge timer and hide wave-specific UI.
       if (gameMode === "challenge") {
