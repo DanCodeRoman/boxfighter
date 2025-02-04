@@ -714,6 +714,12 @@
 } else {
   welcomePhase = false;
   document.getElementById("roundMessage").style.opacity = 0;
+  
+   challengeStartTime = performance.now();
+    lastChallengeSpawnTime = performance.now();
+    challengeTimerActive = true;
+    document.getElementById("challengeTimer").style.display = "block";
+  
 }
       gameStarted = true;
       // If Challenge Mode is selected, initialize challenge timer and hide wave-specific UI.
@@ -1692,6 +1698,13 @@
   enemyBullets = [];
   healthBoosts = [];
   coinsOnField = [];
+  
+  if (gameMode === "challenge") {
+    challengeStartTime = performance.now();
+    lastChallengeSpawnTime = performance.now();
+    challengeTimerActive = true;
+  }
+  
   
   // If a game is already in progress, pause it before switching modes
   if (gameStarted) {
