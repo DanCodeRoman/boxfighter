@@ -852,14 +852,15 @@
     }
     
     function updatePlayer() {
-      let playerSpeed = 2.5; // Change this value to adjust speed
+      function updatePlayer() {
+  let speed = 2.5; // Reduced speed
 
-function updatePlayer() {
-  if (keys["w"] && player.y - player.size / 2 > 0) player.y -= playerSpeed;
-  if (keys["s"] && player.y + player.size / 2 < canvas.height) player.y += playerSpeed;
-  if (keys["a"] && player.x - player.size / 2 > 0) player.x -= playerSpeed;
-  if (keys["d"] && player.x + player.size / 2 < canvas.width) player.x += playerSpeed;
+  if (keys["w"] && player.y - player.size / 2 > 0) player.y -= speed;
+  if (keys["s"] && player.y + player.size / 2 < canvas.height) player.y += speed;
+  if (keys["a"] && player.x - player.size / 2 > 0) player.x -= speed;
+  if (keys["d"] && player.x + player.size / 2 < canvas.width) player.x += speed;
 }
+
 
     
     function updateEnemies() {
