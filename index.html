@@ -813,63 +813,26 @@
       ctx.restore();
     }
     
-    function drawEnemies() {
-      for (let enemy of enemies) {
-        ctx.shadowColor = enemy.type === "boss" ? "white" :
-                          enemy.type === "tank" ? "yellow" : 
-                          enemy.type === "clone" ? "white" : "red";
-        ctx.shadowBlur = 5;
-        ctx.fillStyle = enemy.color;
-        ctx.fillRect(
-          enemy.x - enemy.size / 2,
-          enemy.y - enemy.size / 2,
-          enemy.size,
-          enemy.size
-        );
-        ctx.shadowBlur = 5;
-        if (enemy.type === "boss") {
-          for (let bullet of enemy.bullets) {
-            ctx.fillStyle = "purple";
-            ctx.beginPath();
-            ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowColor = "transparent";
-            ctx.shadowBlur = 0;
-          }
-        }
+    // Draw the shield if active
+    function drawShield() {
+      if (shieldActive) {
+        const shieldRadius = player.size / 2 + 10;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, shieldRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = getShieldColor();
+        ctx.lineWidth = 10;
+        ctx.shadowColor = getShieldColor();
+        ctx.shadowBlur = 20;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
       }
     }
     
-    // Draw the shield if active
-  function drawShield() {
-  if (shieldActive) {
-    // Set the radius of the shield circle.
-    // For example, place it 5 pixels away from the player’s edge:
-    const shieldRadius = player.size / 2 + 10;
-    
-    ctx.beginPath();
-    // Draw a full circle (0 to 2*PI radians) around the player.
-    ctx.arc(player.x, player.y, shieldRadius, 0, Math.PI * 2);
-    
-    // Set the shield color based on its durability:
-    ctx.strokeStyle = getShieldColor(); // This function returns neon blue, yellow, or red.
-    ctx.lineWidth = 10;
-    ctx.shadowColor = getShieldColor();
-    ctx.shadowBlur = 20;
-    
-    ctx.stroke();
-    
-    // Reset shadow for subsequent drawings
-    ctx.shadowBlur = 0;
-  }
-}
-
-
-    
+    // Returns shield color based on durability
     function getShieldColor() {
-      if (shieldDurability === 3) return "#00FFFF"; // neon blue
-      else if (shieldDurability === 2) return "yellow";
-      else if (shieldDurability === 1) return "red";
+      if (shieldDurability >= 4) return "#00FFFF"; // neon blue for high durability
+      else if (shieldDurability === 3) return "yellow";
+      else if (shieldDurability <= 2) return "red";
       else return "#00FFFF";
     }
     
@@ -967,21 +930,6 @@
       if (keys["d"] && player.x + player.size / 2 < canvas.width) player.x += speed;
     }
     
-    // Helper to normalize angle differences
-    function normalizeAngle(angle) {
-      while(angle > Math.PI) angle -= 2 * Math.PI;
-      while(angle < -Math.PI) angle += 2 * Math.PI;
-      return angle;
-    }
-    
-    // Check if a given point (x,y) is in the shield zone (front of player)
-    function isInShieldZone(x, y) {
-      let angleToPoint = Math.atan2(y - player.y, x - player.x);
-      let shieldAngle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x) - Math.PI/2;
-      let diff = Math.abs(normalizeAngle(angleToPoint - shieldAngle));
-      return diff < 0.785; // within 45 degrees
-    }
-    
     function updateEnemies() {
       for (let i = enemies.length - 1; i >= 0; i--) {
         const enemy = enemies[i];
@@ -1011,8 +959,7 @@
           player.y + player.size/2 > enemy.y - enemy.size/2 &&
           player.y - player.size/2 < enemy.y + enemy.size/2
         ) {
-          // If the enemy is coming from the front (shield zone) and shield is active, block the hit.
-          if (isInShieldZone(enemy.x, enemy.y) && shieldActive) {
+          if (shieldActive) {
             shieldHit();
             if (enemy.shootInterval) {
               clearInterval(enemy.shootInterval);
@@ -1222,7 +1169,7 @@
       for (let i = enemyBullets.length - 1; i >= 0; i--) {
         const bullet = enemyBullets[i];
         if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < player.size / 2 + bullet.size) {
-          if (isInShieldZone(bullet.x, bullet.y) && shieldActive) {
+          if (shieldActive) {
             shieldHit();
             enemyBullets.splice(i, 1);
           } else {
@@ -1234,13 +1181,13 @@
           }
         }
       }
-      // Check boss bullets (inside enemy.bullets) collisions with player or shield
+      // Check boss bullets collisions with player or shield
       for (let enemy of enemies) {
         if (enemy.type === "boss") {
           for (let i = enemy.bullets.length - 1; i >= 0; i--) {
             const bullet = enemy.bullets[i];
             if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < player.size / 2 + bullet.size) {
-              if (isInShieldZone(bullet.x, bullet.y) && shieldActive) {
+              if (shieldActive) {
                 shieldHit();
                 enemy.bullets.splice(i, 1);
               } else {
@@ -1284,7 +1231,7 @@
       healthBarInner.style.backgroundColor = health > 50 ? "green" : "orange";
     }
     
-    // Shield hit processing
+    // Shield hit processing: subtract 1 durability per hit.
     function shieldHit() {
       shieldDurability--;
       if (shieldDurability <= 0) {
@@ -1529,10 +1476,10 @@
       }
     });
     
-    // Activate shield function
+    // Activate shield function with updated durability: now 5 collisions/bullets.
     function activateShield() {
       shieldActive = true;
-      shieldDurability = 3;
+      shieldDurability = 5;
     }
     
     // Flamethrower gun variables and events
@@ -1799,12 +1746,10 @@
         shieldEquipped = false;
         alert("Rifle equipped!");
       } else if (gun === "shield") {
-        // Check if shield is already owned
         if (ownedGuns.includes("shield")) {
           shieldEquipped = true;
           alert("Shield equipped! (Press Space to deploy)");
         } else {
-          // Purchase shield for 5000 coins (5000/50 = 100 coins deducted)
           if (coinCount * 50 >= 5000) {
             coinCount -= 100;
             localStorage.setItem("coinCount", coinCount);
@@ -1879,8 +1824,6 @@
     
     function selectGameMode(mode) {
       gameMode = mode;
-      
-      // Clear any zombie-mode entities:
       enemies = [];
       enemyBullets = [];
       healthBoosts = [];
@@ -1890,7 +1833,6 @@
         challengeStartTime = 0;
         lastChallengeSpawnTime = 0;
         challengeTimerActive = false;
-        
         roundNumber = 1;
         nextWaveTime = performance.now();
         welcomePhase = true;
