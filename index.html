@@ -703,7 +703,8 @@
           challengeTimerActive = true;
         }
         document.getElementById("bgMusic").play();
-        gameLoop();
+        // Start the loop using requestAnimationFrame to ensure a valid timestamp.
+        requestAnimationFrame(gameLoop);
         return;
       }
     
@@ -772,7 +773,8 @@
         document.getElementById("challengeTimer").style.display = "none";
       }
       displayLeaderboard();
-      gameLoop();
+      // Start the game loop via requestAnimationFrame for a proper timestamp.
+      requestAnimationFrame(gameLoop);
     }
     
     function restartGame() {
@@ -1417,7 +1419,11 @@
       challengeTimerActive = false;
     }
     
+    // Main game loop – note we ensure a valid timestamp.
     function gameLoop(timestamp) {
+      if (timestamp === undefined) {
+        timestamp = performance.now();
+      }
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
       // Update shield cooldown box if active
