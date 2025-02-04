@@ -667,17 +667,21 @@
   document.getElementById("challengeTimer").style.display = "none";
 }
       
-      if (paused) {
-        paused = false;
-        document.getElementById("startMenu").style.display = "none";
-        document.getElementById("gameUI").style.display = "block";
-        if (gameMode === "challenge") {
-          document.getElementById("challengeTimer").style.display = "block";
-        }
-        document.getElementById("bgMusic").play();
-        gameLoop();
-        return;
-      }
+     if (paused) {
+    paused = false;
+    document.getElementById("startMenu").style.display = "none";
+    document.getElementById("gameUI").style.display = "block";
+    // If in challenge mode and we had paused, adjust challengeStartTime:
+    if (gameMode === "challenge" && challengePauseTimestamp !== null) {
+      const pauseDuration = performance.now() - challengePauseTimestamp;
+      challengeStartTime += pauseDuration; // Shift the start time forward by pause duration.
+      challengePauseTimestamp = null;
+      document.getElementById("challengeTimer").style.display = "block";
+    }
+    document.getElementById("bgMusic").play();
+    gameLoop();
+    return;
+  }
       if (gameLoopId) {
         cancelAnimationFrame(gameLoopId);
       }
