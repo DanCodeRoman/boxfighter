@@ -1719,6 +1719,12 @@
       coinsOnField = [];
       
       if (gameMode === "zombies") {
+        // Reset challenge mode timer variables so that if you switch back to zombies,
+        // any previous challenge timer data is cleared.
+        challengeStartTime = 0;
+        lastChallengeSpawnTime = 0;
+        challengeTimerActive = false;
+        
         roundNumber = 1;
         nextWaveTime = performance.now();
         welcomePhase = true;
