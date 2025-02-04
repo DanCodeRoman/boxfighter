@@ -636,23 +636,28 @@
     }
     
     // Pause game function.
-    function pauseGame() {
-      if (document.getElementById("gameOverScreen").style.display !== "none") {
+   function pauseGame() {
+    if (document.getElementById("gameOverScreen").style.display !== "none") {
         return;
-      }
-      if (!paused) {
+    }
+    if (!paused) {
         paused = true;
         if (gameLoopId) {
-          cancelAnimationFrame(gameLoopId);
+            cancelAnimationFrame(gameLoopId);
         }
         document.getElementById("bgMusic").pause();
         document.getElementById("startMenu").style.display = "flex";
         document.getElementById("gameUI").style.display = "none";
         document.getElementById("challengeTimer").style.display = "none";
-        challengeTimerActive = false; // Optionally stop the timer updates
-       
-      }
+        
+        // If in challenge mode, pause the timer
+        if (gameMode === "challenge") {
+            challengeTimerActive = false; // Stop the timer updates
+            challengePauseTimestamp = performance.now(); // Save when the pause happened
+        }
     }
+}
+
     
     // When starting the game, include a 5‑second welcome phase (for Zombies mode)
     function startGame() {
