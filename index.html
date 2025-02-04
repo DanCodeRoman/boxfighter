@@ -841,28 +841,40 @@
     
     // Draw the shield if active
     function drawShield() {
-      if (shieldActive) {
-        const angularOffset = Math.PI/2;
-        let shieldAngle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x) - Math.PI/2 + angularOffset;
-        const shieldOffset = 20; 
-        let shieldCenterX = player.x + Math.cos(shieldAngle) * (player.size/2 + shieldOffset);
-        let shieldCenterY = player.y + Math.sin(shieldAngle) * (player.size/2 + shieldOffset);
-        let shieldLength = 40;
-        let x1 = shieldCenterX - Math.cos(shieldAngle) * shieldLength/2;
-        let y1 = shieldCenterY - Math.sin(shieldAngle) * shieldLength/2;
-        let x2 = shieldCenterX + Math.cos(shieldAngle) * shieldLength/2;
-        let y2 = shieldCenterY + Math.sin(shieldAngle) * shieldLength/2;
-        ctx.beginPath();
-        ctx.strokeStyle = getShieldColor();
-        ctx.lineWidth = 10;
-        ctx.shadowColor = getShieldColor();
-        ctx.shadowBlur = 20;
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-      }
-    }
+     function drawShield() {
+  if (shieldActive) {
+    // For a horizontal shield, we use a fixed angle (0 radians) so that it is drawn horizontally.
+    const shieldAngle = 0; // horizontal (to the right)
+    
+    // Calculate the shield's center.
+    // Here, we assume the ship's front is to the right.
+    // 'player.size/2' is the distance from the center to the edge, and we add 5 pixels.
+    const shieldOffset = player.size / 2 + 5;
+    let shieldCenterX = player.x + shieldOffset;
+    let shieldCenterY = player.y; // same vertical position as the player
+    
+    // Define the shield's length (how wide the line will be).
+    const shieldLength = 40;
+    
+    // Since we want a horizontal line, the endpoints are offset left and right from the center.
+    let x1 = shieldCenterX - shieldLength / 2;
+    let y1 = shieldCenterY;
+    let x2 = shieldCenterX + shieldLength / 2;
+    let y2 = shieldCenterY;
+    
+    // Draw the shield line
+    ctx.beginPath();
+    ctx.strokeStyle = getShieldColor(); // function that returns the color based on durability
+    ctx.lineWidth = 10;
+    ctx.shadowColor = getShieldColor();
+    ctx.shadowBlur = 20;
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+}
+
     
     function getShieldColor() {
       if (shieldDurability === 3) return "#00FFFF"; // neon blue
