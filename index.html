@@ -729,7 +729,8 @@
       } else {
         welcomePhase = false;
         document.getElementById("roundMessage").style.opacity = 0;
-        
+    
+        // Reset challenge timer when starting in challenge mode.
         challengeStartTime = performance.now();
         lastChallengeSpawnTime = performance.now();
         challengeTimerActive = true;
@@ -1191,7 +1192,13 @@
       healthBarInner.style.backgroundColor = health > 50 ? "green" : "orange";
     }
     
+    // When the game ends, if in challenge mode, disable the timer
     function endGame() {
+      // If in challenge mode, ensure the timer stops
+      if (gameMode === "challenge") {
+        challengeTimerActive = false;
+        document.getElementById("challengeTimer").style.display = "none";
+      }
       document.getElementById("gameOverScreen").style.display = "flex";
       document.getElementById("finalScore").textContent = `Final Score: ${score}`;
       updateLeaderboard(score);
@@ -1276,6 +1283,11 @@
       if (!challengeTimerActive) {
         return;
       }
+      // If player has died, ensure timer stops.
+      if (health <= 0) {
+        challengeTimerActive = false;
+        return;
+      }
       let elapsed = timestamp - challengeStartTime;
       if (elapsed >= 300000) { // 5 minutes
         enemies = [];
@@ -1294,6 +1306,7 @@
         let remaining = 300000 - elapsed;
         let minutes = Math.floor(remaining / 60000);
         let seconds = Math.floor((remaining % 60000) / 1000);
+        // Display timer only in challenge mode
         document.getElementById("challengeTimer").textContent = `Time Left: ${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
       }
     }
@@ -1719,8 +1732,7 @@
       coinsOnField = [];
       
       if (gameMode === "zombies") {
-        // Reset challenge mode timer variables so that if you switch back to zombies,
-        // any previous challenge timer data is cleared.
+        // Reset challenge timer variables so that any previous challenge data is cleared.
         challengeStartTime = 0;
         lastChallengeSpawnTime = 0;
         challengeTimerActive = false;
