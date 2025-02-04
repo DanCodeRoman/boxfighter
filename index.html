@@ -852,11 +852,15 @@
     }
     
     function updatePlayer() {
-      if (keys["w"] && player.y - player.size / 2 > 0) player.y -= 5;
-      if (keys["s"] && player.y + player.size / 2 < canvas.height) player.y += 5;
-      if (keys["a"] && player.x - player.size / 2 > 0) player.x -= 5;
-      if (keys["d"] && player.x + player.size / 2 < canvas.width) player.x += 5;
-    }
+      let playerSpeed = 2.5; // Change this value to adjust speed
+
+function updatePlayer() {
+  if (keys["w"] && player.y - player.size / 2 > 0) player.y -= playerSpeed;
+  if (keys["s"] && player.y + player.size / 2 < canvas.height) player.y += playerSpeed;
+  if (keys["a"] && player.x - player.size / 2 > 0) player.x -= playerSpeed;
+  if (keys["d"] && player.x + player.size / 2 < canvas.width) player.x += playerSpeed;
+}
+
     
     function updateEnemies() {
       for (let i = enemies.length - 1; i >= 0; i--) {
