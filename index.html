@@ -842,9 +842,11 @@
     // Draw the shield if active
     function drawShield() {
       if (shieldActive) {
-        let shieldAngle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x) - Math.PI/2 + 90;
-        let shieldCenterX = player.x + Math.cos(shieldAngle) * (player.size/2 + 20);
-        let shieldCenterY = player.y + Math.sin(shieldAngle) * (player.size/2 + 20);
+        const angularOffset = Math.PI/2;
+        let shieldAngle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x) - Math.PI/2 + angularOffset;
+        const shieldOffset = 20; 
+        let shieldCenterX = player.x + Math.cos(shieldAngle) * (player.size/2 + shieldOffset);
+        let shieldCenterY = player.y + Math.sin(shieldAngle) * (player.size/2 + shieldOffset);
         let shieldLength = 40;
         let x1 = shieldCenterX - Math.cos(shieldAngle) * shieldLength/2;
         let y1 = shieldCenterY - Math.sin(shieldAngle) * shieldLength/2;
