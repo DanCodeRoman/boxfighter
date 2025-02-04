@@ -849,9 +849,10 @@
     // Calculate the shield's center.
     // Here, we assume the ship's front is to the right.
     // 'player.size/2' is the distance from the center to the edge, and we add 5 pixels.
+   let facingAngle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x);
     const shieldOffset = player.size / 2 + 5;
-    let shieldCenterX = player.x + shieldOffset;
-    let shieldCenterY = player.y; // same vertical position as the player
+    let shieldCenterX = player.x + Math.cos(facingAngle) * shieldOffset;
+    let shieldCenterY = player.y + Math.sin(facingAngle) * shieldOffset;// same vertical position as the player
     
     // Define the shield's length (how wide the line will be).
     const shieldLength = 40;
