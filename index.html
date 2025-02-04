@@ -1008,6 +1008,7 @@
             bullet.y >= enemy.y - enemy.size / 2 &&
             bullet.y <= enemy.y + enemy.size / 2
           ) {
+            let damage = bullet.flamethrower ? 0.5 : 1; // Flamethrower bullets deal half damage
             if (enemy.type === "tank") {
               enemy.hitsRemaining--;
               player.bullets.splice(i, 1);
