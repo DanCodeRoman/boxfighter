@@ -1679,13 +1679,22 @@
     }
     
     function selectGameMode(mode) {
-      gameMode = mode;
-      if (gameStarted) {
-        pauseGame();
-      }
-      closeGameMode();
-      alert("Game mode switched to " + (mode === "zombies" ? "Zombies" : "Challenge Mode") + ". Ready up to start.");
-    }
+  gameMode = mode;
+  
+  // If switching game modes, clear zombie-mode entities:
+  enemies = [];
+  enemyBullets = [];
+  healthBoosts = [];
+  coinsOnField = [];
+  
+  // If a game is already in progress, pause it before switching modes
+  if (gameStarted) {
+    pauseGame();
+  }
+  
+  closeGameMode();
+  alert("Game mode switched to " + (mode === "zombies" ? "Zombies" : "Challenge Mode") + ". Ready up to start.");
+}
     
   </script>
 </body>
