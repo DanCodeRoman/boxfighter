@@ -667,21 +667,17 @@
   document.getElementById("challengeTimer").style.display = "none";
 }
       
-     if (paused) {
-    paused = false;
-    document.getElementById("startMenu").style.display = "none";
-    document.getElementById("gameUI").style.display = "block";
-    // If in challenge mode and we had paused, adjust challengeStartTime:
-    if (gameMode === "challenge" && challengePauseTimestamp !== null) {
-      const pauseDuration = performance.now() - challengePauseTimestamp;
-      challengeStartTime += pauseDuration; // Shift the start time forward by pause duration.
-      challengePauseTimestamp = null;
-      document.getElementById("challengeTimer").style.display = "block";
-    }
-    document.getElementById("bgMusic").play();
-    gameLoop();
-    return;
-  }
+      if (paused) {
+        paused = false;
+        document.getElementById("startMenu").style.display = "none";
+        document.getElementById("gameUI").style.display = "block";
+        if (gameMode === "challenge") {
+          document.getElementById("challengeTimer").style.display = "block";
+        }
+        document.getElementById("bgMusic").play();
+        gameLoop();
+        return;
+      }
       if (gameLoopId) {
         cancelAnimationFrame(gameLoopId);
       }
@@ -1296,72 +1292,54 @@
     }
     
     function spawnSingleEnemy() {
-  let type;
-  if (gameMode === "challenge") {
-    // In challenge mode, 50% chance to spawn a boss.
-    if (Math.random() < 0.10) {
-      type = "boss";
-    } else {
-      // Choose from the remaining enemy types.
-      const otherTypes = ["melee", "shooter", "tank", "clone"];
-      type = otherTypes[Math.floor(Math.random() * otherTypes.length)];
-    }
-  } else {
-    // For Zombies mode (or any other mode), use the normal enemy selection logic.
-    const types = ["melee", "shooter", "tank", "clone", "boss"];
-    type = types[Math.floor(Math.random() * types.length)];
-  }
-  
-  const pos = getRandomSpawnPosition(100);
-  let enemy = {
-    x: pos.x,
-    y: pos.y,
-    type: type,
-    dx: 0,
-    dy: 0,
-    bullets: []
-  };
-
-  // Set up enemy properties based on the type.
-  if (type === "shooter") {
-    enemy.size = 40;
-    enemy.color = "darkblue";
-    enemy.speed = 1.75;
-    enemy.hitsRemaining = 2;
-    enemy.shootCooldown = 0;
-    enemy.shootInterval = setInterval(() => {
-      if (enemies.indexOf(enemy) !== -1) {
-        shootAtPlayer(enemy);
-      } else {
-        clearInterval(enemy.shootInterval);
+      const types = ["melee", "shooter", "tank", "clone", "boss"];
+      const type = types[Math.floor(Math.random() * types.length)];
+      const pos = getRandomSpawnPosition(100);
+      let enemy = {
+        x: pos.x,
+        y: pos.y,
+        type: type,
+        dx: 0,
+        dy: 0,
+        bullets: []
+      };
+      if (type === "shooter") {
+        enemy.size = 40;
+        enemy.color = "darkblue";
+        enemy.speed = 1.75;
+        enemy.hitsRemaining = 2;
+        enemy.shootCooldown = 0;
+        enemy.shootInterval = setInterval(() => {
+          if (enemies.indexOf(enemy) !== -1) {
+            shootAtPlayer(enemy);
+          } else {
+            clearInterval(enemy.shootInterval);
+          }
+        }, 800);
+      } else if (type === "tank") {
+        enemy.size = 60;
+        enemy.color = "yellow";
+        enemy.speed = 1.25;
+        enemy.hitsRemaining = 5;
+      } else if (type === "clone") {
+        enemy.size = 30;
+        enemy.color = "white";
+        enemy.speed = 2.35;
+        enemy.canClone = true;
+        enemy.isSplitting = false;
+      } else if (type === "boss") {
+        enemy.size = 120;
+        enemy.color = "darkred";
+        enemy.speed = 2.35;
+        enemy.hitsRemaining = 85;
+        initBoss(enemy);
+      } else { // melee
+        enemy.size = 30;
+        enemy.color = "red";
+        enemy.speed = 2.35;
       }
-    }, 800);
-  } else if (type === "tank") {
-    enemy.size = 60;
-    enemy.color = "yellow";
-    enemy.speed = 1.25;
-    enemy.hitsRemaining = 5;
-  } else if (type === "clone") {
-    enemy.size = 30;
-    enemy.color = "white";
-    enemy.speed = 2.35;
-    enemy.canClone = true;
-    enemy.isSplitting = false;
-  } else if (type === "boss") {
-    enemy.size = 120;
-    enemy.color = "darkred";
-    enemy.speed = 2.35;
-    enemy.hitsRemaining = 85;
-    initBoss(enemy);
-  } else { // melee enemy
-    enemy.size = 30;
-    enemy.color = "red";
-    enemy.speed = 2.35;
-  }
-  
-  enemies.push(enemy);
-}
-
+      enemies.push(enemy);
+    }
     
     function endChallengeMode() {
       pauseGame();
