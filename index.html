@@ -1337,12 +1337,11 @@
     function gameLoop(timestamp) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      if (gameMode === "challenge") {
-        handleChallengeMode(timestamp);
-      } else {
-        handleWaveLogic(timestamp);
-      }
-      
+      if (gameMode === "challenge" && !paused) {
+    handleChallengeMode(timestamp);
+  } else {
+    handleWaveLogic(timestamp);
+  }
       updatePlayer();
       updateBullets();
       updateEnemies();
@@ -1698,6 +1697,16 @@
   enemyBullets = [];
   healthBoosts = [];
   coinsOnField = [];
+  
+  if (gameMode === "zombies") {
+    roundNumber = 1;
+    nextWaveTime = performance.now();
+    welcomePhase = true;
+    // Optionally, set the welcome phase message:
+    welcomePhaseEndTime = performance.now() + 5000;
+    document.getElementById("roundMessage").textContent = "Welcome Agent B-XFTR";
+    document.getElementById("roundMessage").style.opacity = 1;
+  }
   
   if (gameMode === "challenge") {
     challengeStartTime = performance.now();
