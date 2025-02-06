@@ -1012,8 +1012,10 @@
           player.y - player.size/2 < enemy.y + enemy.size/2
         ) {
           // If the enemy is coming from the front (shield zone) and shield is active, block the hit.
-          if (isInShieldZone(enemy.x, enemy.y) && shieldActive) {
-            shieldHit();
+          if (shieldActive) {
+    // Always block the hit if the shield is active,
+    // regardless of the enemy’s angle.
+    shieldHit();
             if (enemy.shootInterval) {
               clearInterval(enemy.shootInterval);
             }
