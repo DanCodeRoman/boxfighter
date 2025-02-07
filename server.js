@@ -5,7 +5,13 @@ const socketIo = require('socket.io');  // Import socket.io
 
 const app = express();
 const server = http.createServer(app);  // Create the HTTP server
-const io = socketIo(server);  // Initialize Socket.IO with the HTTP server
+const io = socketIo(server, {
+  cors: {
+    origin: "https://dancoderoman.github.io",  // Allow only your GitHub Pages domain
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"]
+  }
+});  // Initialize Socket.IO with the HTTP server and CORS configuration
 
 // Enable CORS for Express routes
 app.use(cors({
