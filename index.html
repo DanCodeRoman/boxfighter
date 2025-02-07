@@ -890,14 +890,17 @@ function shootBullet() {
     }
     let otherPlayers = {};
    
-   function drawOtherPlayers() {
- for (let id in otherPlayers) {
-    const otherPlayer = otherPlayers[id];
-    ctx.save();
-    ctx.translate(otherPlayer.x, otherPlayer.y);
-    ctx.drawImage(playerImage, -otherPlayer.size / 2, -otherPlayer.size / 2, otherPlayer.size, otherPlayer.size);
-    ctx.restore();
-  }
+  function drawOtherPlayers() {
+    for (let id in otherPlayers) {
+        const otherPlayer = otherPlayers[id];
+        console.log(`Drawing player: ${id} at (${otherPlayer.x}, ${otherPlayer.y}) with size: ${otherPlayer.size}`);
+        if (otherPlayer && otherPlayer.x && otherPlayer.y) {
+            ctx.save();
+            ctx.translate(otherPlayer.x, otherPlayer.y);
+            ctx.drawImage(playerImage, -otherPlayer.size / 2, -otherPlayer.size / 2, otherPlayer.size, otherPlayer.size);
+            ctx.restore();
+        }
+    }
 }
 
     function drawEnemies() {
