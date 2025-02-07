@@ -800,6 +800,40 @@ socket.on('playerDisconnect', (id) => {
   console.log("Player disconnected:", id);
 });
 
+socket.on("respawn", (playerData) => {
+  otherPlayers[playerData.id] = playerData; // Update respawned player
+});
+
+        socket.on("playerShoot", (data) => {
+  // Handle bullets shot by other players
+  const otherPlayer = otherPlayers[data.id];
+  if (otherPlayer) {
+    // Draw other player’s bullets (implement this similar to your own shooting)
+    drawBullet(data.data);  // You need to handle bullet drawing for other players as well
+  }
+});
+
+// Update the respawn timer
+socket.on('respawn', (playerData) => {
+  // Respawn the player after 5 seconds
+  player.x = canvas.width / 2;
+  player.y = canvas.height / 2;
+  // Reset other player state as needed
+});
+
+// Show respawn timer on screen
+function showRespawnTimer(timeLeft) {
+  document.getElementById("respawnTimer").textContent = `Respawning in ${timeLeft} seconds`;
+}
+
+
+// Send your shoot event to the server
+function shootBullet() {
+  // Your shooting logic
+  socket.emit("playerShoot", { id: socket.id, data: bulletData });
+}
+
+
   // Later in your game loop, you can emit your own events. For example:
   // socket.emit("playerMove", { x: player.x, y: player.y });
   // socket.emit("playerShoot", { bulletData: ... });
@@ -854,16 +888,13 @@ socket.on('playerDisconnect', (id) => {
       ctx.restore();
     }
     let otherPlayers = {};
-    function drawOpponents() {
-  for (const id in otherPlayers) {
-    const opponent = otherPlayers[id];
-    // For demonstration purposes, draw a simple blue circle
-    ctx.beginPath();
-    ctx.arc(opponent.x, opponent.y, player.size / 2, 0, Math.PI * 2);
-    ctx.fillStyle = "blue"; // Use a color that distinguishes the opponent
-    ctx.fill();
+    function drawOtherPlayers() {
+  for (let id in otherPlayers) {
+    const otherPlayer = otherPlayers[id];
+    drawPlayer(otherPlayer);  // Use your existing function to draw player ships
   }
 }
+
 
     function drawEnemies() {
       for (let enemy of enemies) {
@@ -1331,7 +1362,14 @@ socket.on('playerDisconnect', (id) => {
       shieldCooldownStart = performance.now();
       document.getElementById("shieldCooldownBox").style.display = "block";
     }
-    
+    function checkHealth() {
+  if (health <= 0) {
+    endGame();
+    // Send a "playerDied" event to notify the server
+    socket.emit('playerDied');
+  }
+}
+
     function endGame() {
       if (gameMode === "challenge") {
         challengeTimerActive = false;
@@ -1340,7 +1378,16 @@ socket.on('playerDisconnect', (id) => {
       document.getElementById("gameOverScreen").style.display = "flex";
       document.getElementById("finalScore").textContent = `Final Score: ${score}`;
       updateLeaderboard(score);
+     let respawnTime = 5; // 5 seconds respawn timer
+  let interval = setInterval(() => {
+    showRespawnTimer(respawnTime);
+    respawnTime--;
+    if (respawnTime <= 0) {
+      clearInterval(interval);
+      socket.emit('playerRespawn');  // Trigger respawn logic
     }
+  }, 1000);
+}
     
     function handleWaveLogic(timestamp) {
       if (gameMode !== "zombies") {
@@ -1534,7 +1581,7 @@ socket.on('playerDisconnect', (id) => {
       drawBullets();
       drawHealthBoosts();
       drawCoins();
-      drawOpponents();
+      drawOtherPlayers(); 
       
       document.getElementById("score").textContent = `Score: ${score}`;
       
