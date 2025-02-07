@@ -769,26 +769,26 @@
 let otherPlayers = {};
 
 // When you first connect:
-socket.on('currentPlayers', (playersData) => {
-  Object.keys(playersData).forEach((id) => {
-    if (id !== socket.id) {
-      // Optionally, add a default size if not provided:
-      if (!playersData[id].size) playersData[id].size = 40;
-      if (!playersData[id].health) playersData[id].health = 100;
-      otherPlayers[id] = playersData[id];
-    }
-  });
+ socket.on('currentPlayers', (playersData) => {
+      // Add remote players (exclude your own player).
+      Object.keys(playersData).forEach((id) => {
+        if (id !== socket.id) {
+          let pData = playersData[id];
+          if (!pData.size) pData.size = 40;
+          if (!pData.health) pData.health = 100;
+          otherPlayers[id] = pData;
+        }
+      });
   // If there are at least 2 players, display the "player found" message.
-  if(Object.keys(playersData).length >= 2) {
-    const roundMessage = document.getElementById("roundMessage");
-    roundMessage.textContent = "Player found, starting PvP mode";
-    roundMessage.style.opacity = 1;
-    setTimeout(() => {
-      roundMessage.style.transition = "opacity 2s";
-      roundMessage.style.opacity = 0;
-    }, 2000);
-  }
-});
+    if(Object.keys(playersData).length >= 2) {
+        const roundMessage = document.getElementById("roundMessage");
+        roundMessage.textContent = "Player found, starting PvP mode";
+        roundMessage.style.opacity = 1;
+        setTimeout(() => {
+          roundMessage.style.opacity = 0;
+        }, 2000);
+      }
+    });
 
 // When a new player joins:
 socket.on('newPlayer', (playerData) => {
@@ -818,15 +818,36 @@ socket.on("respawn", (playerData) => {
   otherPlayers[playerData.id] = playerData; // Update respawned player
 });
 
-        socket.on("playerShoot", (data) => {
-  // Handle bullets shot by other players
-  const otherPlayer = otherPlayers[data.id];
-  if (otherPlayer) {
-    // Draw other player’s bullets (implement this similar to your own shooting)
-    drawBullet(data.data);  // You need to handle bullet drawing for other players as well
-  }
-});
+            socket.on("playerShoot", (data) => {
+      // Add remote bullet if it’s not from you.
+      if(data.id !== socket.id) {
+        const bullet = {
+          x: data.data.x,
+          y: data.data.y,
+          dx: data.data.dx,
+          dy: data.data.dy,
+          size: data.data.size || 5,
+          lifetime: data.data.lifetime || 2000,
+          creationTime: performance.now(),
+          shooter: data.id
+        };
+        otherBullets.push(bullet);
+      }
+    });
 
+ function checkCollision(obj1, obj2) {
+      const dx = obj1.x - obj2.x;
+      const dy = obj1.y - obj2.y;
+      const r1 = (obj1.size || 40) / 2;
+      const r2 = (obj2.size || 40) / 2;
+      return Math.sqrt(dx * dx + dy * dy) < (r1 + r2);
+    }
+
+    function checkBulletCollision(bullet1, bullet2) {
+      const dx = bullet1.x - bullet2.x;
+      const dy = bullet1.y - bullet2.y;
+      return Math.sqrt(dx * dx + dy * dy) < (bullet1.size + bullet2.size);
+    }
 // Update the respawn timer
 socket.on('respawn', (playerData) => {
   // Respawn the player after 5 seconds
@@ -846,9 +867,22 @@ socket.on("playerDisconnect", (id) => {
 
 // Send your shoot event to the server
 function shootBullet() {
-  // Your shooting logic
-  socket.emit("playerShoot", { id: socket.id, data: bulletData });
-}
+      let angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x);
+      const speed = 8;
+      const bullet = {
+        x: player.x,
+        y: player.y,
+        dx: Math.cos(angle) * speed,
+        dy: Math.sin(angle) * speed,
+        size: 5,
+        lifetime: 2000,
+        creationTime: performance.now(),
+        shooter: socket.id
+      };
+      player.bullets.push(bullet);
+      socket.emit("playerShoot", bullet);
+      // Optionally: play a shooting sound here.
+    }
 
 
   // Later in your game loop, you can emit your own events. For example:
@@ -907,29 +941,16 @@ function shootBullet() {
     let otherPlayers = {};
    
 function drawOtherPlayers() {
-  for (let id in otherPlayers) {
-    const otherPlayer = otherPlayers[id];
-
-    // Check if the player is within canvas bounds
-    if (
-      otherPlayer.x >= 0 &&
-      otherPlayer.x <= canvas.width &&
-      otherPlayer.y >= 0 &&
-      otherPlayer.y <= canvas.height
-    ) {
-      ctx.save();
-      ctx.translate(otherPlayer.x, otherPlayer.y);
-      ctx.drawImage(
-        playerImage,
-        -otherPlayer.size / 2,
-        -otherPlayer.size / 2,
-        otherPlayer.size,
-        otherPlayer.size
-      );
-      ctx.restore();
+      for (let id in otherPlayers) {
+        // Do not draw your own player again.
+        if (id === socket.id) continue;
+        const op = otherPlayers[id];
+        ctx.save();
+        ctx.translate(op.x, op.y);
+        ctx.drawImage(playerImage, - (op.size || 40) / 2, - (op.size || 40) / 2, op.size || 40, op.size || 40);
+        ctx.restore();
+      }
     }
-  }
-}
 
 
     function drawEnemies() {
@@ -993,6 +1014,47 @@ function drawOtherPlayers() {
           player.bullets.splice(i, 1);
         }
       }
+          for (let i = otherBullets.length - 1; i >= 0; i--) {
+        const bullet = otherBullets[i];
+        bullet.x += bullet.dx;
+        bullet.y += bullet.dy;
+        if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height ||
+            performance.now() - bullet.creationTime > bullet.lifetime) {
+          otherBullets.splice(i, 1);
+        }
+          }
+       for (let i = player.bullets.length - 1; i >= 0; i--) {
+        for (let j = otherBullets.length - 1; j >= 0; j--) {
+          if (checkBulletCollision(player.bullets[i], otherBullets[j])) {
+            player.bullets.splice(i, 1);
+            otherBullets.splice(j, 1);
+            break;
+          }
+        }
+      }
+        for (let i = otherBullets.length - 1; i >= 0; i--) {
+        if (checkCollision(otherBullets[i], player)) {
+          otherBullets.splice(i, 1);
+          socket.emit("playerHit", { id: socket.id, damage: 10 });
+          player.health -= 10;
+          if (player.health <= 0) {
+            // Handle local player death (show game over screen, etc.).
+            document.getElementById("gameOverScreen").style.display = "flex";
+            cancelAnimationFrame(gameLoopId);
+          }
+        }
+      }
+        for (let id in otherPlayers) {
+        let remotePlayer = otherPlayers[id];
+        for (let i = player.bullets.length - 1; i >= 0; i--) {
+          if (checkCollision(player.bullets[i], remotePlayer)) {
+            player.bullets.splice(i, 1);
+            socket.emit("playerHit", { targetId: remotePlayer.id, damage: 10 });
+            remotePlayer.health = (remotePlayer.health || 100) - 10;
+          }
+        }
+      }
+    }
       for (let i = enemyBullets.length - 1; i >= 0; i--) {
         const bullet = enemyBullets[i];
         bullet.x += bullet.dx;
@@ -1055,6 +1117,19 @@ function drawOtherPlayers() {
           ctx.fill();
         }
       }
+       for (const bullet of player.bullets) {
+        ctx.fillStyle = "yellow";
+        ctx.beginPath();
+        ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+       for (const bullet of otherBullets) {
+        ctx.fillStyle = "red";
+        ctx.beginPath();
+        ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
       for (let bullet of enemyBullets) {
         ctx.shadowColor = "darkblue";
         ctx.shadowBlur = 8;
