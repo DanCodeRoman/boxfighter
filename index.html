@@ -552,10 +552,7 @@
     // Create and load the player ship image.
     const playerImage = new Image();
    playerImage.onload = () => {
-    // Once the image is loaded, run the game loop or drawing logic
-    console.log('Player image loaded');
-    gameLoop();  // Start the game loop after the image is loaded
-};
+  
 playerImage.src = 'player.png';  // Set the image source
     const player = {
       x: canvas.width / 2,
