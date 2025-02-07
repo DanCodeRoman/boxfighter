@@ -571,6 +571,7 @@
     const colorPicker = document.getElementById("playerColor");
     const colorPreview = document.getElementById("colorPreview");
     let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
+    const socket = io(https://boxfighter.onrender.com/");
 
     colorPicker.addEventListener("input", (e) => {
       player.color = e.target.value;
