@@ -30,26 +30,25 @@ let players = {};
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
 
-  // Set up the player with a default health value and (optionally) a default size.
+  // Initialize the new player
   players[socket.id] = {
     id: socket.id,
     x: 0,
     y: 0,
-    health: 100,  // New: default health
+    health: 100,
     lives: 10,
     isDead: false,
     gun: "rifle",
     color: "#39ff14",
-    // (Optional) You can also add a default size here if desired:
     size: 40
   };
 
-  // Send all players (including yourself) to the new client.
+  // Send the current players to the new client
   socket.emit('currentPlayers', players);
-  // Broadcast to everyone else that a new player joined.
+  // Notify other clients of the new player
   socket.broadcast.emit('newPlayer', players[socket.id]);
 
-  // When a player moves, update the record and broadcast the change.
+  // Update player movement
   socket.on('playerMove', (data) => {
     if (!players[socket.id].isDead) {
       players[socket.id] = { ...players[socket.id], ...data };
@@ -57,38 +56,32 @@ io.on('connection', (socket) => {
     }
   });
 
-  // When a player shoots, broadcast the bullet data.
+  // Broadcast shooting event
   socket.on('playerShoot', (data) => {
-    // data should be an object with bullet info: { x, y, dx, dy, size, lifetime }
     socket.broadcast.emit('playerShoot', { id: socket.id, data });
   });
 
-  // New: When a player reports a hit (either they got hit or hit someone)
+  // Process a hit event
   socket.on("playerHit", (data) => {
-    // data can be sent as either:
-    //   { targetId, damage }  --> local bullet hit a remote player
-    //   { id, damage }        --> remote bullet hit your local player
-    if(data.targetId) {
+    if (data.targetId) {
       const targetId = data.targetId;
-      if(players[targetId]) {
+      if (players[targetId]) {
         players[targetId].health = (players[targetId].health || 100) - data.damage;
-        // Send the updated health to the hit player
         io.to(targetId).emit("updateHealth", players[targetId].health);
-        // Inform everyone else (if you want them to update the remote health display)
         socket.broadcast.emit("playerHealthUpdate", { id: targetId, health: players[targetId].health });
-        if(players[targetId].health <= 0) {
+        if (players[targetId].health <= 0) {
           io.to(targetId).emit("gameOver", { message: "You were killed!" });
           io.emit("playerDied", targetId);
           delete players[targetId];
         }
       }
-    } else if(data.id) {
+    } else if (data.id) {
       const id = data.id;
-      if(players[id]) {
+      if (players[id]) {
         players[id].health = (players[id].health || 100) - data.damage;
         io.to(id).emit("updateHealth", players[id].health);
-        socket.broadcast.emit("playerHealthUpdate", { id: id, health: players[id].health });
-        if(players[id].health <= 0) {
+        socket.broadcast.emit("playerHealthUpdate", { id, health: players[id].health });
+        if (players[id].health <= 0) {
           io.to(id).emit("gameOver", { message: "You were killed!" });
           io.emit("playerDied", id);
           delete players[id];
@@ -97,7 +90,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // When a player “dies” (for example, in other game modes)
+  // Handle player death
   socket.on('playerDied', () => {
     players[socket.id].isDead = true;
     players[socket.id].lives -= 1;
@@ -106,7 +99,7 @@ io.on('connection', (socket) => {
     setTimeout(() => {
       if (players[socket.id] && players[socket.id].lives > 0) {
         players[socket.id].isDead = false;
-        players[socket.id].health = 100; // Reset health on respawn.
+        players[socket.id].health = 100;
         socket.emit('respawn', players[socket.id]);
       } else {
         socket.emit('gameOver', { message: 'Game Over! You are out of lives.' });
@@ -114,7 +107,7 @@ io.on('connection', (socket) => {
     }, 5000);
   });
 
-  // On disconnect, remove the player.
+  // Handle disconnect
   socket.on('disconnect', () => {
     console.log(`Player disconnected: ${socket.id}`);
     delete players[socket.id];
