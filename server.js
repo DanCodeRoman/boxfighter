@@ -35,6 +35,7 @@ io.on('connection', (socket) => {
     color: "#39ff14" // Default color
   };
 
+  
   // Send current players to the newly connected client
   socket.emit('currentPlayers', players);
 
