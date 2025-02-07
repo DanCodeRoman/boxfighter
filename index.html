@@ -447,6 +447,10 @@
       <strong>Challenge Mode</strong>
       <p>Survive a continuous enemy onslaught for 5 minutes! New enemies spawn every second.</p>
     </div>
+    <div class="gameModeOption" onclick="selectGameMode('pvp')">
+      <strong>PVP</strong>
+      <p>1v1 Multiplayer battle mode.</p>
+    </div>
     <button id="closeGameMode" onclick="closeGameMode()">Close</button>
   </div>
   <div id="gameUI" style="display: none;">
@@ -475,10 +479,9 @@
     canvas.height = window.innerHeight;
 
     canvas.addEventListener("contextmenu", (e) => {
-  e.preventDefault();
-});
+      e.preventDefault();
+    });
 
-    
     // Global variables
     let keys = {};
     let health = 100;
@@ -489,52 +492,52 @@
     let gameLoopId;
     let gameStarted = false;
     let boss = null; // used in rounds < 10
-    
-    // Global array for shooter enemy bullets (so they persist after shooter dies)
+
+    // Global array for shooter enemy bullets
     let enemyBullets = [];
-    
+
     // Wave timing variables (for Zombies mode)
     let roundNumber = 1;
     let nextWaveTime = performance.now();
-    const waveInterval = 15000; // total duration for each wave cycle (ms)
-    const waveMessageDuration = 3000; // duration for the wave message before enemies spawn (ms)
+    const waveInterval = 15000;
+    const waveMessageDuration = 3000;
     let waveStarted = false;
     let enemiesSpawnedForWave = false;
-    let waveStartTime = 0; // time at which the wave message is shown
-    
+    let waveStartTime = 0;
+
     // Welcome phase variables (5 seconds)
     let welcomePhase = true;
     let welcomePhaseEndTime = 0;
-    
+
     // Challenge Mode variables
     let gameMode = "zombies"; // default game mode
     let challengeStartTime = 0;
     let lastChallengeSpawnTime = 0;
     let challengeTimerActive = false;
-    
-    // Global variable to track pause time (for Challenge Mode timer)
+
+    // Global variable for pause time (for Challenge Mode timer)
     let pausedTime = 0;
-    
+
     // Load owned guns from localStorage; default to ["rifle"]
     let ownedGuns = JSON.parse(localStorage.getItem("ownedGuns")) || ["rifle"];
-    
-    // Gun selection: default "rifle" (one bullet per shot)
+
+    // Gun selection: default "rifle"
     let playerGun = "rifle";
-    // New shield ability flag
+    // Shield ability flag
     let shieldEquipped = false;
-    
+
     // Shield state variables
     let shieldActive = false;
     let shieldDurability = 0;
     let shieldCooldownActive = false;
     let shieldCooldownStart = 0;
-    
-    // Global variable for pause state
+
+    // Global pause state
     let paused = false;
-    
+
     // Load persistent coin count from localStorage or initialize to 0
     let coinCount = parseInt(localStorage.getItem("coinCount")) || 0;
-    
+
     // Update coin counter displays
     function updateCoinCounters() {
       const menuCounter = document.getElementById("menuCoinCounter");
@@ -543,48 +546,42 @@
       gameOverCounter.textContent = `Coins: ${coinCount * 50}`;
     }
     updateCoinCounters();
-    
+
     // Create and load the player ship image.
     const playerImage = new Image();
     playerImage.src = "player.png";
-    
+
     const player = {
       x: canvas.width / 2,
       y: canvas.height / 2,
       size: 40,
-      // The player's "color" now is used for the drop-shadow of the ship.
       color: "#39ff14",
       bullets: []
     };
-    
+
     // Global mouse position for rotating the ship.
     let mousePos = { x: player.x, y: player.y };
-    
-    // Update mouse position on move
+
     document.addEventListener("mousemove", (e) => {
       mousePos = { x: e.clientX, y: e.clientY };
     });
-    
+
     const colorPicker = document.getElementById("playerColor");
     const colorPreview = document.getElementById("colorPreview");
     let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
-    
-    // When the user changes the color, update the player's drop-shadow color
+
     colorPicker.addEventListener("input", (e) => {
       player.color = e.target.value;
-      // Update the preview image drop-shadow filter.
       colorPreview.innerHTML = `<img src="player.png" style="width:40px;height:40px;filter: drop-shadow(0 0 10px ${e.target.value});" />`;
     });
-    
-    // Create enemy kill sound helper.
+
     const enemyKillSound = document.getElementById("enemyKillSound");
     function playEnemyKillSound() {
       const soundClone = enemyKillSound.cloneNode();
       soundClone.volume = 1.0;
       soundClone.play().then(() => {});
     }
-    
-    // Create and optimize shoot sound helper using an audio pool.
+
     const shootSound = document.getElementById("shootSound");
     const shootSoundPool = [];
     const poolSize = 5;
@@ -598,11 +595,11 @@
       sound.currentTime = 0;
       sound.play().catch(err => console.error("Error playing shoot sound:", err));
     }
-    
+
     let baseGamma = null;
     let baseBeta = null;
     const sensitivity = 0.2;
-    
+
     function handleOrientation(event) {
       if (baseGamma === null || baseBeta === null) {
         baseGamma = event.gamma;
@@ -616,7 +613,7 @@
       player.x = Math.max(player.size / 2, Math.min(canvas.width - player.size / 2, player.x));
       player.y = Math.max(player.size / 2, Math.min(canvas.height - player.size / 2, player.y));
     }
-    
+
     function enableAccelerometerControls() {
       if (window.DeviceOrientationEvent) {
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -634,12 +631,11 @@
         }
       }
     }
-    
+
     if (/Mobi|Android/i.test(navigator.userAgent)) {
       enableAccelerometerControls();
     }
-    
-    // Helper to generate a random spawn position away from the player.
+
     function getRandomSpawnPosition(minDistance = 200) {
       let x, y;
       do {
@@ -648,8 +644,7 @@
       } while (Math.hypot(x - player.x, y - player.y) < minDistance);
       return { x, y };
     }
-    
-    // Update boss health bars based on boss enemies in the game.
+
     function updateBossHealthBars() {
       const bossBarContainer = document.getElementById("bossHealthBarContainer");
       const bossEnemies = enemies.filter(e => e.type === "boss");
@@ -672,8 +667,7 @@
         }
       }
     }
-    
-    // Pause game function.
+
     function pauseGame() {
       if (document.getElementById("gameOverScreen").style.display !== "none") {
           return;
@@ -689,19 +683,16 @@
           document.getElementById("challengeTimer").style.display = "none";
       }
     }
-    
-    // When starting the game, include a 5‑second welcome phase (for Zombies mode)
+
     function startGame() {
       const canvas = document.getElementById("gameCanvas");
       canvas.style.cursor = "url('https://i.postimg.cc/gk1NVmNN/output-onlinepngtools.png') 30 30, crosshair";
       
-      // If resuming from a pause:
       if (paused) {
         paused = false;
         document.getElementById("startMenu").style.display = "none";
         document.getElementById("gameUI").style.display = "block";
         if (gameMode === "challenge") {
-          // Adjust challengeStartTime by the pause duration.
           let pauseDuration = performance.now() - pausedTime;
           challengeStartTime += pauseDuration;
           document.getElementById("challengeTimer").style.display = "block";
@@ -750,22 +741,24 @@
       nextWaveTime = performance.now();
       waveStarted = false;
       enemiesSpawnedForWave = false;
-      if (gameMode !== "challenge") {
+      if (gameMode !== "challenge" && gameMode !== "pvp") {
         welcomePhase = true;
         welcomePhaseEndTime = performance.now() + 5000;
         document.getElementById("roundMessage").textContent = "Welcome Agent B-XFTR";
         document.getElementById("roundMessage").style.opacity = 1;
-        // Ensure challenge timer is hidden in zombies mode.
         document.getElementById("challengeTimer").style.display = "none";
-      } else {
+      } else if (gameMode === "challenge") {
         welcomePhase = false;
         document.getElementById("roundMessage").style.opacity = 0;
-    
-        // Reset challenge timer when starting in challenge mode.
         challengeStartTime = performance.now();
         lastChallengeSpawnTime = performance.now();
         challengeTimerActive = true;
         document.getElementById("challengeTimer").style.display = "block";
+      } else if (gameMode === "pvp") {
+        // In PVP mode, connect to the multiplayer server.
+        document.getElementById("roundMessage").textContent = "PVP Mode: Waiting for opponent...";
+        document.getElementById("roundMessage").style.opacity = 1;
+        // (Here you would add client-side networking code, such as connecting to a Socket.io server.)
       }
       gameStarted = true;
       if (gameMode === "challenge") {
@@ -806,7 +799,6 @@
       }
     }
     
-    // Draw the player ship.
     function drawPlayer() {
       let angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x) - Math.PI/2;
       ctx.save();
@@ -845,40 +837,27 @@
       }
     }
     
-    // Draw the shield if active
-  function drawShield() {
-  if (shieldActive) {
-    // Set the radius of the shield circle.
-    // For example, place it 5 pixels away from the player’s edge:
-    const shieldRadius = player.size / 2 + 17;
-    
-    ctx.beginPath();
-    // Draw a full circle (0 to 2*PI radians) around the player.
-    ctx.arc(player.x, player.y, shieldRadius, 0, Math.PI * 2);
-    
-    // Set the shield color based on its durability:
-    ctx.strokeStyle = getShieldColor(); // This function returns neon blue, yellow, or red.
-    ctx.lineWidth = 10;
-    ctx.shadowColor = getShieldColor();
-    ctx.shadowBlur = 20;
-    
-    ctx.stroke();
-    
-    // Reset shadow for subsequent drawings
-    ctx.shadowBlur = 0;
-  }
-}
+    function drawShield() {
+      if (shieldActive) {
+        const shieldRadius = player.size / 2 + 17;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, shieldRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = getShieldColor();
+        ctx.lineWidth = 10;
+        ctx.shadowColor = getShieldColor();
+        ctx.shadowBlur = 20;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+    }
 
-
-    
     function getShieldColor() {
-      if (shieldDurability === 3) return "#00FFFF"; // neon blue
+      if (shieldDurability === 3) return "#00FFFF";
       else if (shieldDurability === 2) return "yellow";
       else if (shieldDurability === 1) return "red";
       else return "#00FFFF";
     }
     
-    // Update player's and enemy bullets.
     function updateBullets() {
       for (let i = player.bullets.length - 1; i >= 0; i--) {
         const bullet = player.bullets[i];
@@ -972,19 +951,17 @@
       if (keys["d"] && player.x + player.size / 2 < canvas.width) player.x += speed;
     }
     
-    // Helper to normalize angle differences
     function normalizeAngle(angle) {
       while(angle > Math.PI) angle -= 2 * Math.PI;
       while(angle < -Math.PI) angle += 2 * Math.PI;
       return angle;
     }
     
-    // Check if a given point (x,y) is in the shield zone (front of player)
     function isInShieldZone(x, y) {
       let angleToPoint = Math.atan2(y - player.y, x - player.x);
       let shieldAngle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x) - Math.PI/2;
       let diff = Math.abs(normalizeAngle(angleToPoint - shieldAngle));
-      return diff < 0.785; // within 45 degrees
+      return diff < 0.785;
     }
     
     function updateEnemies() {
@@ -1009,18 +986,14 @@
           enemy.x += Math.cos(angle) * enemy.speed;
           enemy.y += Math.sin(angle) * enemy.speed;
         }
-        // Check collision with player
         if (
           player.x + player.size/2 > enemy.x - enemy.size/2 &&
           player.x - player.size/2 < enemy.x + enemy.size/2 &&
           player.y + player.size/2 > enemy.y - enemy.size/2 &&
           player.y - player.size/2 < enemy.y + enemy.size/2
         ) {
-          // If the enemy is coming from the front (shield zone) and shield is active, block the hit.
           if (shieldActive) {
-    // Always block the hit if the shield is active,
-    // regardless of the enemy’s angle.
-    shieldHit();
+            shieldHit();
             if (enemy.shootInterval) {
               clearInterval(enemy.shootInterval);
             }
@@ -1043,7 +1016,6 @@
       }
     }
     
-    // Shooter enemy shooting functions
     function shootAtPlayer(enemy) {
       const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
       const bullet = {
@@ -1225,7 +1197,6 @@
           }
         }
       }
-      // Check enemy bullet collisions with player or shield
       for (let i = enemyBullets.length - 1; i >= 0; i--) {
         const bullet = enemyBullets[i];
         if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < player.size / 2 + bullet.size) {
@@ -1241,7 +1212,6 @@
           }
         }
       }
-      // Check boss bullets (inside enemy.bullets) collisions with player or shield
       for (let enemy of enemies) {
         if (enemy.type === "boss") {
           for (let i = enemy.bullets.length - 1; i >= 0; i--) {
@@ -1291,7 +1261,6 @@
       healthBarInner.style.backgroundColor = health > 50 ? "green" : "orange";
     }
     
-    // Shield hit processing
     function shieldHit() {
       shieldDurability--;
       if (shieldDurability <= 0) {
@@ -1306,7 +1275,6 @@
       document.getElementById("shieldCooldownBox").style.display = "block";
     }
     
-    // When the game ends, if in challenge mode, disable the timer
     function endGame() {
       if (gameMode === "challenge") {
         challengeTimerActive = false;
@@ -1317,7 +1285,6 @@
       updateLeaderboard(score);
     }
     
-    // Wave system for Zombies mode.
     function handleWaveLogic(timestamp) {
       if (gameMode !== "zombies") {
         return;
@@ -1390,7 +1357,6 @@
       }
     }
     
-    // Challenge Mode functions.
     function handleChallengeMode(timestamp) {
       if (!challengeTimerActive) {
         return;
@@ -1400,7 +1366,7 @@
         return;
       }
       let elapsed = timestamp - challengeStartTime;
-      if (elapsed >= 300000) { // 5 minutes
+      if (elapsed >= 300000) {
         enemies = [];
         enemyBullets = [];
         document.getElementById("roundMessage").textContent = "You Win!";
@@ -1463,7 +1429,7 @@
         enemy.speed = 2.35;
         enemy.hitsRemaining = 85;
         initBoss(enemy);
-      } else { // melee
+      } else {
         enemy.size = 30;
         enemy.color = "red";
         enemy.speed = 2.35;
@@ -1480,7 +1446,6 @@
     function gameLoop(timestamp) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Update shield cooldown box if active
       if (shieldCooldownActive) {
         let elapsed = (performance.now() - shieldCooldownStart) / 1000;
         let remaining = Math.max(0, 10 - elapsed);
@@ -1527,7 +1492,6 @@
       }
     });
     
-    // Listen for spacebar to deploy shield if equipped and available
     document.addEventListener("keydown", function(e) {
       if (e.code === "Space") {
         if (shieldEquipped && !shieldActive && !shieldCooldownActive) {
@@ -1536,13 +1500,11 @@
       }
     });
     
-    // Activate shield function
     function activateShield() {
       shieldActive = true;
       shieldDurability = 3;
     }
     
-    // Flamethrower gun variables and events
     let flamethrowerInterval = null;
     let lastMousePos = { x: player.x, y: player.y };
     
@@ -1703,7 +1665,6 @@
       }
     }
     
-    // Modified spawnEnemies for Zombies mode.
     function spawnEnemies() {
       let numberOfEnemies = 8 + roundNumber - 1;
       for (let i = 0; i < numberOfEnemies; i++) {
@@ -1750,7 +1711,7 @@
           enemy.speed = 2.35;
           enemy.canClone = true;
           enemy.isSplitting = false;
-        } else { // melee
+        } else {
           enemy.size = 30;
           enemy.color = "red";
           enemy.speed = 2.35;
@@ -1791,7 +1752,6 @@
       }
     }
     
-    // Gun Shop functions.
     function openGunShop() {
       document.getElementById("gunShopModal").style.display = "block";
     }
@@ -1806,12 +1766,10 @@
         shieldEquipped = false;
         alert("Rifle equipped!");
       } else if (gun === "shield") {
-        // Check if shield is already owned
         if (ownedGuns.includes("shield")) {
           shieldEquipped = true;
           alert("Shield equipped! (Press Space to deploy)");
         } else {
-          // Purchase shield for 5000 coins (5000/50 = 100 coins deducted)
           if (coinCount * 50 >= 5000) {
             coinCount -= 100;
             localStorage.setItem("coinCount", coinCount);
@@ -1875,7 +1833,6 @@
       closeGunShop();
     }
     
-    // Game Mode Modal functions.
     function openGameModeBox() {
       document.getElementById("gameModeModal").style.display = "block";
     }
@@ -1886,8 +1843,6 @@
     
     function selectGameMode(mode) {
       gameMode = mode;
-      
-      // Clear any zombie-mode entities:
       enemies = [];
       enemyBullets = [];
       healthBoosts = [];
@@ -1897,7 +1852,6 @@
         challengeStartTime = 0;
         lastChallengeSpawnTime = 0;
         challengeTimerActive = false;
-        
         roundNumber = 1;
         nextWaveTime = performance.now();
         welcomePhase = true;
@@ -1909,6 +1863,9 @@
         challengeStartTime = performance.now();
         lastChallengeSpawnTime = performance.now();
         challengeTimerActive = true;
+      } else if (gameMode === "pvp") {
+        document.getElementById("roundMessage").textContent = "PVP Mode: Waiting for opponent...";
+        document.getElementById("roundMessage").style.opacity = 1;
       }
       
       if (gameStarted) {
@@ -1916,7 +1873,7 @@
       }
       
       closeGameMode();
-      alert("Game mode switched to " + (mode === "zombies" ? "Zombies" : "Challenge Mode") + ". Ready up to start.");
+      alert("Game mode switched to " + (mode === "zombies" ? "Zombies" : mode === "challenge" ? "Challenge Mode" : "PVP") + ". Ready up to start.");
     }
     
   </script>
