@@ -3,7 +3,7 @@ const cors = require('cors');
 const app = express();
 const http = require('http').createServer(app);
  cors: {
-    origin: "https://boxfighter.onrender.com/",  // Ensure this matches your frontend URL
+    origin: "https://dancoderoman.github.io",  // Ensure this matches your frontend URL
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type"]
   }
