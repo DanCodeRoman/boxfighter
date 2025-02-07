@@ -1323,25 +1323,22 @@ function drawOtherPlayers() {
         }
       }
      // If in PVP mode, check if your bullets hit other players
+// If in PVP mode, check if your bullets hit other players
 if (gameMode === "pvp") {
   for (let i = player.bullets.length - 1; i >= 0; i--) {
     const bullet = player.bullets[i];
-    // Loop over each other player in the otherPlayers object
     for (let id in otherPlayers) {
       const other = otherPlayers[id];
-      // Simple circle collision detection
       if (Math.hypot(bullet.x - other.x, bullet.y - other.y) < other.size / 2 + (bullet.size || 5)) {
-        // Inform the server that you hit this player (damage value can be adjusted)
         socket.emit('playerHit', { targetId: other.id, damage: 10 });
-        // Remove the bullet after a hit
         player.bullets.splice(i, 1);
-        break; // Exit the inner loop once the bullet is consumed
+        break;
       }
     }
   }
 }
 
-// Check for bullet collisions with NPC enemies
+// NPC Enemy Bullet Collision
 for (let enemy of enemies) {
   if (enemy.type === "boss") {
     for (let i = enemy.bullets.length - 1; i >= 0; i--) {
@@ -1349,18 +1346,18 @@ for (let enemy of enemies) {
       if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < player.size / 2 + bullet.size) {
         if (isInShieldZone(bullet.x, bullet.y) && shieldActive) {
           shieldHit();
-          enemy.bullets.splice(i, 1);
         } else {
           health -= health * 0.25;
-          enemy.bullets.splice(i, 1);
           if (health <= 0) {
             endGame();
           }
         }
+        enemy.bullets.splice(i, 1); // Move this outside the if statements
       }
     }
   }
 }
+
 
     
     function checkHealthBoostCollisions() {
