@@ -8,14 +8,20 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: ["https://dancoderoman.github.io", "https://dancoderoman.github.io/boxfighter"],
+    origin: [
+      "https://dancoderoman.github.io",
+      "https://dancoderoman.github.io/boxfighter"
+    ],
     methods: ["GET", "POST"]
   }
 });
 
 // Enable CORS middleware for Express routes
 app.use(cors({
-  origin: ["https://dancoderoman.github.io", "https://dancoderoman.github.io/boxfighter"],
+  origin: [
+    "https://dancoderoman.github.io",
+    "https://dancoderoman.github.io/boxfighter"
+  ],
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type"]
 }));
@@ -60,14 +66,15 @@ io.on('connection', (socket) => {
 
   // Broadcast shooting event (and track bullet data)
   socket.on('playerShoot', (data) => {
-    // 'data' should include bullet properties (e.g., x, y, dx, dy, flamethrower, etc.)
+    // 'data' should include bullet properties (e.g., x, y, dx, dy, etc.)
     if (!players[socket.id].bullets) {
       players[socket.id].bullets = [];
     }
-    // Optionally, store the bullet data on the server (clients can manage this themselves too)
+    // Store the bullet data on the server if needed
     players[socket.id].bullets.push(data);
-    // Broadcast the shooting event to all other clients with the shooter’s id and bullet data
-    socket.broadcast.emit('playerShoot', { id: socket.id, data });
+    console.log(`Player ${socket.id} fired a bullet:`, data);
+    // Emit the bullet event to all clients (including the shooter)
+    io.emit('playerShoot', { id: socket.id, data });
   });
 
   // Process a hit event (damage calculation)
