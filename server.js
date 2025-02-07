@@ -7,7 +7,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-// Enable CORS for Express routes
+// Enable CORS for all routes (allow your GitHub Pages)
 app.use(cors({
   origin: "https://dancoderoman.github.io",  // Only allow your GitHub Pages domain
   methods: ["GET", "POST"],
@@ -15,8 +15,10 @@ app.use(cors({
   credentials: true  // Allow credentials (cookies, etc.)
 }));
 
+// This is the critical part, make sure OPTIONS requests are handled:
 app.options('*', cors());  // Handle preflight requests (for browsers)
 
+// Listen for socket connections
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
 
