@@ -7,7 +7,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "https://dancoderoman.github.io",  // Only allow your GitHub Pages domain
+    origin: "https://dancoderoman.github.io/boxfighter/",  // Only allow your GitHub Pages domain
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type"],
     credentials: true  // Allow credentials (cookies, etc.)
@@ -16,7 +16,7 @@ const io = socketIo(server, {
 
 // Enable CORS for all routes (make sure OPTIONS requests are handled)
 app.use(cors({
-  origin: "https://dancoderoman.github.io",  // Only allow your GitHub Pages domain
+  origin: "https://dancoderoman.github.io/boxfighter",  // Only allow your GitHub Pages domain
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type"],
   credentials: true  // Allow credentials (cookies, etc.)
