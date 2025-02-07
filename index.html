@@ -853,7 +853,7 @@ socket.on('playerDisconnect', (id) => {
       ctx.drawImage(playerImage, -player.size/2, -player.size/2, player.size, player.size);
       ctx.restore();
     }
-
+    let otherPlayers = {};
     function drawOpponents() {
   for (const id in otherPlayers) {
     const opponent = otherPlayers[id];
