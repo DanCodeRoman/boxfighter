@@ -760,8 +760,29 @@
         // In PVP mode, connect to the multiplayer server.
         document.getElementById("roundMessage").textContent = "PVP Mode: Waiting for opponent...";
         document.getElementById("roundMessage").style.opacity = 1;
-        // (Here you would add client-side networking code, such as connecting to a Socket.io server.)
-      }
+        // Replace the URL below with your server's address (if running locally, use http://localhost:3000)
+  const socket = io("http://localhost:3000");
+
+  socket.on("connect", () => {
+    console.log("Connected to PVP server as:", socket.id);
+    document.getElementById("roundMessage").textContent = "PVP Mode: Opponent found! Let the battle begin.";
+    // Here, you can send your player's initial state to the server.
+  });
+
+  // Listen for movement events from the opponent
+  socket.on("playerMove", (data) => {
+    // Update the opponent's position in your game
+  });
+
+  // Listen for shooting events from the opponent
+  socket.on("playerShoot", (data) => {
+    // Create enemy bullets based on data received
+  });
+
+  // Later in your game loop, you can emit your own events. For example:
+  // socket.emit("playerMove", { x: player.x, y: player.y });
+  // socket.emit("playerShoot", { bulletData: ... });
+}
       gameStarted = true;
       if (gameMode === "challenge") {
         challengeStartTime = performance.now();
