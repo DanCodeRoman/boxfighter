@@ -1,12 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
-const socketIo = require('socket.io');  // Add this line to import socket.io
+const socketIo = require('socket.io');  // Import socket.io
 
 const app = express();
 const server = http.createServer(app);  // Create the HTTP server
 const io = socketIo(server);  // Initialize Socket.IO with the HTTP server
-
 
 // Enable CORS for Express routes
 app.use(cors({
@@ -15,12 +14,10 @@ app.use(cors({
   allowedHeaders: ["Content-Type"]
 }));
 
-// Your remaining server logic here...
-
-
 // Object to track connected players (for example purposes)
 let players = {};  // This is the existing object for managing connected players
 let otherPlayers = {};
+
 // Listen for socket connections
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
@@ -36,7 +33,6 @@ io.on('connection', (socket) => {
     color: "#39ff14" // Default color
   };
 
-  
   // Send current players to the newly connected client
   socket.emit('currentPlayers', players);
 
@@ -83,6 +79,6 @@ io.on('connection', (socket) => {
 
 // Start the server
 const port = process.env.PORT || 3000;
-http.listen(port, () => {
+server.listen(port, () => {  // Use server.listen instead of http.listen
   console.log(`Server listening on port ${port}`);
 });
