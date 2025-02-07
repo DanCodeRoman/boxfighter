@@ -40,3 +40,17 @@ io.on('connection', (socket) => {
 http.listen(port, () => {
   console.log('Server listening on port', port);
 });
+
+
+socket.on("newPlayer", (data) => {
+  // Create a new opponent in the game using data.id and data.state
+});
+
+socket.on("currentPlayers", (players) => {
+  // Loop through players and add them to the game state
+});
+
+socket.on("playerDisconnect", (id) => {
+  // Remove the opponent with the given id from the game
+});
+
