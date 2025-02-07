@@ -765,36 +765,50 @@
 
  
 // Receive the list of current players (including yourself)
+// Global object for remote players
+let otherPlayers = {};
+
+// When you first connect:
 socket.on('currentPlayers', (playersData) => {
   Object.keys(playersData).forEach((id) => {
     if (id !== socket.id) {
-      const p = playersData[id];
-      // Set a default size if not provided
-      p.size = 40;
-      otherPlayers[id] = p;
+      // Optionally, add a default size if not provided:
+      if (!playersData[id].size) playersData[id].size = 40;
+      if (!playersData[id].health) playersData[id].health = 100;
+      otherPlayers[id] = playersData[id];
     }
   });
+  // If there are at least 2 players, display the "player found" message.
+  if(Object.keys(playersData).length >= 2) {
+    const roundMessage = document.getElementById("roundMessage");
+    roundMessage.textContent = "Player found, starting PvP mode";
+    roundMessage.style.opacity = 1;
+    setTimeout(() => {
+      roundMessage.style.transition = "opacity 2s";
+      roundMessage.style.opacity = 0;
+    }, 2000);
+  }
 });
 
-// When a new player joins
+// When a new player joins:
 socket.on('newPlayer', (playerData) => {
-  // Set a default size if not provided
-  playerData.size = 40;
-  otherPlayers[playerData.id] = playerData;
-  console.log("New player added:", playerData);
+  if (playerData.id !== socket.id) {
+    if (!playerData.size) playerData.size = 40;
+    if (!playerData.health) playerData.health = 100;
+    otherPlayers[playerData.id] = playerData;
+    console.log("New player added:", playerData);
+  }
 });
 
-// When an existing player moves
+// When an existing player moves:
 socket.on('playerMove', (data) => {
-    // Update the position of the other player
-    if (otherPlayers[data.id]) {
-        otherPlayers[data.id].x = data.data.x;
-        otherPlayers[data.id].y = data.data.y;
-    }
+  if (data.id !== socket.id && otherPlayers[data.id]) {
+    otherPlayers[data.id].x = data.data.x;
+    otherPlayers[data.id].y = data.data.y;
+  }
 });
 
-
-// When a player disconnects
+// When a player disconnects:
 socket.on('playerDisconnect', (id) => {
   delete otherPlayers[id];
   console.log("Player disconnected:", id);
