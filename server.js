@@ -1,72 +1,86 @@
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
-const socketIo = require('socket.io');
+const socketIo = require('socket.io');  // Add this line to import socket.io
 
 const app = express();
-const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: {
-    origin: "https://dancoderoman.github.io/boxfighter/",  // Only allow your GitHub Pages domain
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type"],
-    credentials: true  // Allow credentials (cookies, etc.)
-  }
-});
+const server = http.createServer(app);  // Create the HTTP server
+const io = socketIo(server);  // Initialize Socket.IO with the HTTP server
 
-// Enable CORS for all routes (make sure OPTIONS requests are handled)
+// Enable CORS for Express routes
 app.use(cors({
-  origin: "https://dancoderoman.github.io/boxfighter",  // Only allow your GitHub Pages domain
+  origin: "https://dancoderoman.github.io/boxfighter",  // Allow only your GitHub Pages domain with the /boxfighter path
   methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type"],
-  credentials: true  // Allow credentials (cookies, etc.)
+  allowedHeaders: ["Content-Type"]
 }));
 
-// Handle preflight requests for CORS
-app.options('*', cors());  // Handles preflight requests (OPTIONS)
+// Your remaining server logic here...
 
-// Example route (optional, just to confirm the server is working)
-app.get('/', (req, res) => {
-  res.send('Server is working!');
-});
+// Object to track connected players (for example purposes)
+let players = {};  // This is the existing object for managing connected players
+let otherPlayers = {};
 
 // Listen for socket connections
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
 
-  // Example player setup
-  let players = {};
-  players[socket.id] = { id: socket.id, x: 0, y: 0, color: "#39ff14" };
+  // Add the new player with a default state
+  players[socket.id] = {
+    id: socket.id,
+    x: 0,
+    y: 0,
+    lives: 10, // 10 lives for each player in 1v1 mode
+    isDead: false, // Track if the player is dead
+    gun: "rifle", // Default gun
+    color: "#39ff14" // Default color
+  };
 
-  // Emit current players to new connections
+  // Send current players to the newly connected client
   socket.emit('currentPlayers', players);
 
-  // Emit new player to other players
+  // Inform all other players about the new player
   socket.broadcast.emit('newPlayer', players[socket.id]);
 
-  // Player movement (update position)
+  // Listen for playerMove events and broadcast them
   socket.on('playerMove', (data) => {
-    if (players[socket.id]) {
+    if (!players[socket.id].isDead) {
       players[socket.id] = { ...players[socket.id], ...data };
       socket.broadcast.emit('playerMove', { id: socket.id, data });
     }
   });
 
-  // Player shooting event
+  // Listen for playerShoot events and broadcast them
   socket.on('playerShoot', (data) => {
     socket.broadcast.emit('playerShoot', { id: socket.id, data });
   });
 
-  // Disconnection logic
+  // Handle player death and respawn
+  socket.on('playerDied', () => {
+    players[socket.id].isDead = true;
+    players[socket.id].lives -= 1;
+    socket.emit('playerRespawn', players[socket.id]);
+
+    setTimeout(() => {
+      if (players[socket.id].lives > 0) {
+        players[socket.id].isDead = false;
+        socket.emit('respawn', players[socket.id]);
+      } else {
+        socket.emit('gameOver', { message: 'Game Over! You are out of lives.' });
+      }
+    }, 5000); // 5 seconds respawn delay
+  });
+
+  // Handle disconnection
   socket.on('disconnect', () => {
     console.log(`Player disconnected: ${socket.id}`);
     delete players[socket.id];
+    delete otherPlayers[socket.id]; 
     socket.broadcast.emit('playerDisconnect', socket.id);
   });
 });
 
 // Start the server
-const port = process.env.PORT || 10000;
+const port = process.env.PORT || 10000;  // Change port to match your Render deployment
 server.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
