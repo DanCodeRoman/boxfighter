@@ -1,47 +1,49 @@
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
-const socketIo = require('socket.io');  // Add this line to import socket.io
+const socketIo = require('socket.io');
 
 const app = express();
-const server = http.createServer(app);  // Create the HTTP server
-const io = socketIo(server);  // Initialize Socket.IO with the HTTP server
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: ["https://dancoderoman.github.io", "https://dancoderoman.github.io/boxfighter"],
+    methods: ["GET", "POST"]
+  }
+});
 
-// Enable CORS for Express routes
+// Enable CORS middleware for Express routes
 app.use(cors({
-  origin: "https://dancoderoman.github.io/boxfighter",  // Allow only your GitHub Pages domain with the /boxfighter path
+  origin: ["https://dancoderoman.github.io", "https://dancoderoman.github.io/boxfighter"],
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type"]
 }));
 
-// Your remaining server logic here...
+app.get('/', (req, res) => {
+  res.send("Server is running!");
+});
 
-// Object to track connected players (for example purposes)
-let players = {};  // This is the existing object for managing connected players
+// Object to track connected players
+let players = {};
 let otherPlayers = {};
 
 // Listen for socket connections
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
 
-  // Add the new player with a default state
   players[socket.id] = {
     id: socket.id,
     x: 0,
     y: 0,
-    lives: 10, // 10 lives for each player in 1v1 mode
-    isDead: false, // Track if the player is dead
-    gun: "rifle", // Default gun
-    color: "#39ff14" // Default color
+    lives: 10,
+    isDead: false,
+    gun: "rifle",
+    color: "#39ff14"
   };
 
-  // Send current players to the newly connected client
   socket.emit('currentPlayers', players);
-
-  // Inform all other players about the new player
   socket.broadcast.emit('newPlayer', players[socket.id]);
 
-  // Listen for playerMove events and broadcast them
   socket.on('playerMove', (data) => {
     if (!players[socket.id].isDead) {
       players[socket.id] = { ...players[socket.id], ...data };
@@ -49,12 +51,10 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Listen for playerShoot events and broadcast them
   socket.on('playerShoot', (data) => {
     socket.broadcast.emit('playerShoot', { id: socket.id, data });
   });
 
-  // Handle player death and respawn
   socket.on('playerDied', () => {
     players[socket.id].isDead = true;
     players[socket.id].lives -= 1;
@@ -67,10 +67,9 @@ io.on('connection', (socket) => {
       } else {
         socket.emit('gameOver', { message: 'Game Over! You are out of lives.' });
       }
-    }, 5000); // 5 seconds respawn delay
+    }, 5000);
   });
 
-  // Handle disconnection
   socket.on('disconnect', () => {
     console.log(`Player disconnected: ${socket.id}`);
     delete players[socket.id];
@@ -80,7 +79,7 @@ io.on('connection', (socket) => {
 });
 
 // Start the server
-const port = process.env.PORT || 10000;  // Change port to match your Render deployment
+const port = process.env.PORT || 10000;
 server.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
