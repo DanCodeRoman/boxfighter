@@ -19,7 +19,7 @@ const io = require('socket.io')(http, {
 
 // Object to track connected players (for example purposes)
 let players = {};  // This is the existing object for managing connected players
-
+let otherPlayers = {};
 // Listen for socket connections
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
