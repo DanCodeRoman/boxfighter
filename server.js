@@ -1,41 +1,42 @@
 // server.js
-
 const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-
-// Create an Express app and HTTP server
 const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
+const port = process.env.PORT || 3000;
 
-// (Optional) Serve static files if needed:
-// app.use(express.static('public'));
+let players = {};
 
 io.on('connection', (socket) => {
-  console.log('A player connected:', socket.id);
+  console.log('Player connected:', socket.id);
+  
+  // Add new player
+  players[socket.id] = { x: 0, y: 0 };
 
-  // Example: Listen for player movement events
+  // Inform existing players of the new player
+  socket.broadcast.emit('newPlayer', { id: socket.id, state: players[socket.id] });
+
+  // Send the current players list to the new player
+  socket.emit('currentPlayers', players);
+
+  // Relay movement data to everyone else
   socket.on('playerMove', (data) => {
-    // Broadcast the player's movement to all other clients
-    socket.broadcast.emit('playerMove', data);
+    players[socket.id] = data;
+    socket.broadcast.emit('playerMove', { id: socket.id, data });
   });
 
-  // Example: Listen for player shooting events
+  // Relay shooting events
   socket.on('playerShoot', (data) => {
-    // Broadcast the shooting event to the other player
-    socket.broadcast.emit('playerShoot', data);
+    socket.broadcast.emit('playerShoot', { id: socket.id, data });
   });
 
-  // Handle disconnects
   socket.on('disconnect', () => {
     console.log('Player disconnected:', socket.id);
-    socket.broadcast.emit('playerDisconnected', { id: socket.id });
+    delete players[socket.id];
+    socket.broadcast.emit('playerDisconnect', socket.id);
   });
 });
 
-// Start the server on the specified port
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+http.listen(port, () => {
+  console.log('Server listening on port', port);
 });
