@@ -1051,9 +1051,45 @@ function drawOtherPlayers() {
         ctx.fill();
       }
     }
-    
-    function drawBullets() {
-      for (let bullet of player.bullets) {
+   function drawBullets() {
+  // 1. Draw local player's bullets
+  for (let bullet of player.bullets) {
+    if (bullet.flamethrower) {
+      ctx.shadowColor = "red";
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = "red";
+      ctx.beginPath();
+      ctx.arc(bullet.x, bullet.y, 10, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.shadowColor = "red";
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = "black";
+      ctx.beginPath();
+      ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 2. Draw enemy bullets
+  for (let bullet of enemyBullets) {
+    ctx.shadowColor = "darkblue";
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = "darkblue";
+    ctx.beginPath();
+    ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 3. Draw remote players' bullets
+  // Assuming remote players are stored in an object called `otherPlayers`
+  // and each remote player has a `bullets` array.
+  for (let id in otherPlayers) {
+    const remotePlayer = otherPlayers[id];
+    if (remotePlayer.bullets && remotePlayer.bullets.length > 0) {
+      for (let bullet of remotePlayer.bullets) {
+        // You can style remote bullets differently to distinguish them.
+        // For example, we check if the bullet is a flamethrower bullet:
         if (bullet.flamethrower) {
           ctx.shadowColor = "red";
           ctx.shadowBlur = 8;
@@ -1062,24 +1098,19 @@ function drawOtherPlayers() {
           ctx.arc(bullet.x, bullet.y, 10, 0, Math.PI * 2);
           ctx.fill();
         } else {
-          ctx.shadowColor = "red";
+          // Here we choose blue for remote player's bullets.
+          ctx.shadowColor = "blue";
           ctx.shadowBlur = 8;
-          ctx.fillStyle = "black";
+          ctx.fillStyle = "blue";
           ctx.beginPath();
           ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2);
           ctx.fill();
         }
       }
-      for (let bullet of enemyBullets) {
-        ctx.shadowColor = "darkblue";
-        ctx.shadowBlur = 8;
-        ctx.fillStyle = "darkblue";
-        ctx.beginPath();
-        ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
     }
-    
+  }
+}
+
     function updatePlayer() {
       let speed = 4;
       if (keys["w"] && player.y - player.size / 2 > 0) player.y -= speed;
