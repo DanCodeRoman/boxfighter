@@ -6,28 +6,38 @@ const socketIo = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: {
-    origin: [
-      "https://dancoderoman.github.io",
-      "https://dancoderoman.github.io/boxfighter"
-    ],
-    methods: ["GET", "POST"]
-  }
-});
 
-// Enable CORS middleware for Express routes
+// Enable CORS middleware for Express routes with credentials enabled
 app.use(cors({
   origin: [
     "https://dancoderoman.github.io",
     "https://dancoderoman.github.io/boxfighter"
   ],
   methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type"]
+  credentials: true
 }));
+
+// (Optional) Ensure every response includes the proper CORS headers.
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "https://dancoderoman.github.io");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
 
 app.get('/', (req, res) => {
   res.send("Server is running!");
+});
+
+// Initialize Socket.IO with CORS settings (including credentials)
+const io = socketIo(server, {
+  cors: {
+    origin: [
+      "https://dancoderoman.github.io",
+      "https://dancoderoman.github.io/boxfighter"
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
+  }
 });
 
 // Object to track connected players
@@ -70,7 +80,7 @@ io.on('connection', (socket) => {
     if (!players[socket.id].bullets) {
       players[socket.id].bullets = [];
     }
-    // Store the bullet data on the server if needed
+    // Optionally store bullet data on the server (clients can manage this themselves too)
     players[socket.id].bullets.push(data);
     console.log(`Player ${socket.id} fired a bullet:`, data);
     // Emit the bullet event to all clients (including the shooter)
