@@ -4,69 +4,65 @@ const cors = require('cors');
 const app = express();
 const http = require('http').createServer(app);
 
-// Enable CORS for Express routes
-app.use(cors({
-  origin: 'https://dancoderoman.github.io'  // Allow only your GitHub Pages domain
-}));
+// Enable CORS for Express routes (for any API endpoints, if needed)
+app.use(cors());
 
 // Configure Socket.IO with CORS settings
+// For testing purposes, we're allowing all origins
 const io = require('socket.io')(http, {
   cors: {
-    origin: 'https://dancoderoman.github.io',
-    methods: ['GET', 'POST']
+    origin: "*", // Change "*" to "https://dancoderoman.github.io" once testing is complete
+    methods: ["GET", "POST"]
   }
 });
 
-// A simple object to keep track of connected players
+// Object to track connected players (for example purposes)
 let players = {};
 
-// Listen for new socket connections
+// Listen for socket connections
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
-
-  // Add the new player to our players object with some default state
+  
+  // Add the new player with a default state
   players[socket.id] = {
     id: socket.id,
     x: 0,
-    y: 0,
-    // Add any other properties you need (e.g., score, gun, etc.)
+    y: 0
+    // You can add additional properties as needed
   };
 
-  // Send the current players to the new player
+  // Send current players to the newly connected client
   socket.emit('currentPlayers', players);
 
-  // Notify all other players about the new player
+  // Inform all other players about the new player
   socket.broadcast.emit('newPlayer', players[socket.id]);
 
-  // Listen for movement events from this player
-  socket.on('playerMove', (data) => {
-    // Update the player’s data
-    players[socket.id] = { ...players[socket.id], ...data };
+  // Listen for newPlayer events from this client
+  socket.on('newPlayer', (data) => {
+    console.log("newPlayer event received with data:", data);
+    // You can update your players object or perform other logic here
+  });
 
-    // Broadcast the movement to all other players
+  // Listen for playerMove events and broadcast them
+  socket.on('playerMove', (data) => {
+    players[socket.id] = { ...players[socket.id], ...data };
     socket.broadcast.emit('playerMove', { id: socket.id, data });
   });
 
-  // Listen for shooting events from this player
+  // Listen for playerShoot events and broadcast them
   socket.on('playerShoot', (data) => {
-    // Broadcast the shooting event to all other players
     socket.broadcast.emit('playerShoot', { id: socket.id, data });
   });
 
-  // Handle player disconnect
+  // Handle disconnection
   socket.on('disconnect', () => {
     console.log(`Player disconnected: ${socket.id}`);
-    // Remove the player from our players object
     delete players[socket.id];
-
-    // Inform all remaining players that this player has disconnected
     socket.broadcast.emit('playerDisconnect', socket.id);
   });
 });
 
-// Optionally serve static files if needed (e.g., if you want to serve your client from here)
-// app.use(express.static('public'));
-
+// Start the server
 const port = process.env.PORT || 3000;
 http.listen(port, () => {
   console.log(`Server listening on port ${port}`);
