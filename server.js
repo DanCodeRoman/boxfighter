@@ -18,6 +18,9 @@ const io = require('socket.io')(http, {
 
 // Object to track connected players (for example purposes)
 let players = {};
+// Global object to store other players' state
+let otherPlayers = {};
+
 
 // Listen for socket connections
 io.on('connection', (socket) => {
