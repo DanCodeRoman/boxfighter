@@ -485,8 +485,6 @@
     });
 
     // Global variables
-    let enemyBullets = [];
-    let otherBullets = [];
     let keys = {};
     let health = 100;
     let score = 0;
@@ -496,10 +494,9 @@
     let gameLoopId;
     let gameStarted = false;
     let boss = null; // used in rounds < 10
-    let otherPlayers = {};
 
     // Global array for shooter enemy bullets
-
+    let enemyBullets = [];
 
     // Wave timing variables (for Zombies mode)
     let roundNumber = 1;
@@ -1141,7 +1138,7 @@ function drawOtherPlayers() {
         ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
         ctx.fill();
       }
-    
+    }
     
     function updatePlayer() {
       let speed = 4;
