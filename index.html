@@ -987,6 +987,35 @@ function drawOtherPlayers() {
           enemyBullets.splice(i, 1);
         }
       }
+      
+      function updateBullets() {
+  // ... existing code for local bullets, enemy bullets, boss bullets
+  
+  // Update remote players' bullets
+  for (let id in otherPlayers) {
+    const remotePlayer = otherPlayers[id];
+    if (remotePlayer.bullets && Array.isArray(remotePlayer.bullets)) {
+      for (let i = remotePlayer.bullets.length - 1; i >= 0; i--) {
+        const bullet = remotePlayer.bullets[i];
+        // Update bullet position
+        bullet.x += bullet.dx;
+        bullet.y += bullet.dy;
+
+        // Optional: Remove the bullet if it has a lifetime
+        if (bullet.lifetime && performance.now() - bullet.creationTime >= bullet.lifetime) {
+          remotePlayer.bullets.splice(i, 1);
+          continue;
+        }
+
+        // Remove bullet if it goes off-canvas
+        if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
+          remotePlayer.bullets.splice(i, 1);
+        }
+      }
+    }
+  }
+}
+
       for (let enemy of enemies) {
         if (enemy.type === "boss") {
           for (let i = enemy.bullets.length - 1; i >= 0; i--) {
