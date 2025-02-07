@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -551,7 +552,9 @@
 
     // Create and load the player ship image.
     const playerImage = new Image();
-    playerImage.src = 'player.png';  // Set the image source
+   playerImage.onload = () => {
+  
+playerImage.src = 'player.png';  // Set the image source
     const player = {
       x: canvas.width / 2,
       y: canvas.height / 2,
