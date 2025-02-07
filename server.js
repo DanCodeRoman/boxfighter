@@ -1,24 +1,21 @@
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
-const socketIo = require('socket.io');  // Import socket.io
+const socketIo = require('socket.io');
 
 const app = express();
-const server = http.createServer(app);  // Create the HTTP server
-const io = socketIo(server, {
-  cors: {
-    origin: "https://dancoderoman.github.io",  // Allow only your GitHub Pages domain
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type"]
-  }
-});  // Initialize Socket.IO with the HTTP server and CORS configuration
+const server = http.createServer(app);
+const io = socketIo(server);
 
 // Enable CORS for Express routes
 app.use(cors({
   origin: "https://dancoderoman.github.io",  // Allow only your GitHub Pages domain
   methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type"]
+  allowedHeaders: ["Content-Type"],
+  credentials: true  // Allow cookies and credentials if needed
 }));
+
+app.options('*', cors());  // Handle preflight requests
 
 // Object to track connected players (for example purposes)
 let players = {};  // This is the existing object for managing connected players
