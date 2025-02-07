@@ -5,9 +5,16 @@ const socketIo = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server, {
+  cors: {
+    origin: "https://dancoderoman.github.io",  // Only allow your GitHub Pages domain
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
+    credentials: true  // Allow credentials (cookies, etc.)
+  }
+});
 
-// Enable CORS for all routes (allow your GitHub Pages)
+// Enable CORS for all routes (make sure OPTIONS requests are handled)
 app.use(cors({
   origin: "https://dancoderoman.github.io",  // Only allow your GitHub Pages domain
   methods: ["GET", "POST"],
@@ -15,8 +22,13 @@ app.use(cors({
   credentials: true  // Allow credentials (cookies, etc.)
 }));
 
-// This is the critical part, make sure OPTIONS requests are handled:
-app.options('*', cors());  // Handle preflight requests (for browsers)
+// Handle preflight requests for CORS
+app.options('*', cors());  // Handles preflight requests (OPTIONS)
+
+// Example route (optional, just to confirm the server is working)
+app.get('/', (req, res) => {
+  res.send('Server is working!');
+});
 
 // Listen for socket connections
 io.on('connection', (socket) => {
