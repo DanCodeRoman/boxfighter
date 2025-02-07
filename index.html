@@ -993,6 +993,8 @@ socket.on('playerDisconnect', (id) => {
       if (keys["s"] && player.y + player.size / 2 < canvas.height) player.y += speed;
       if (keys["a"] && player.x - player.size / 2 > 0) player.x -= speed;
       if (keys["d"] && player.x + player.size / 2 < canvas.width) player.x += speed;
+
+      socket.emit('playerMove', { x: player.x, y: player.y });
     }
     
     function normalizeAngle(angle) {
