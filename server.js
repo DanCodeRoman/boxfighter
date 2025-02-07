@@ -30,7 +30,7 @@ let players = {};
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
 
-  // Initialize the new player
+  // Initialize the new player with default properties and an empty bullets array
   players[socket.id] = {
     id: socket.id,
     x: 0,
@@ -40,7 +40,8 @@ io.on('connection', (socket) => {
     isDead: false,
     gun: "rifle",
     color: "#39ff14",
-    size: 40
+    size: 40,
+    bullets: [] // Initialize bullet array for this player
   };
 
   // Send the current players to the new client
@@ -51,17 +52,25 @@ io.on('connection', (socket) => {
   // Update player movement
   socket.on('playerMove', (data) => {
     if (!players[socket.id].isDead) {
+      // Update the player's data with new movement info
       players[socket.id] = { ...players[socket.id], ...data };
       socket.broadcast.emit('playerMove', { id: socket.id, data });
     }
   });
 
-  // Broadcast shooting event
+  // Broadcast shooting event (and track bullet data)
   socket.on('playerShoot', (data) => {
+    // 'data' should include bullet properties (e.g., x, y, dx, dy, flamethrower, etc.)
+    if (!players[socket.id].bullets) {
+      players[socket.id].bullets = [];
+    }
+    // Optionally, store the bullet data on the server (clients can manage this themselves too)
+    players[socket.id].bullets.push(data);
+    // Broadcast the shooting event to all other clients with the shooter’s id and bullet data
     socket.broadcast.emit('playerShoot', { id: socket.id, data });
   });
 
-  // Process a hit event
+  // Process a hit event (damage calculation)
   socket.on("playerHit", (data) => {
     if (data.targetId) {
       const targetId = data.targetId;
@@ -92,19 +101,21 @@ io.on('connection', (socket) => {
 
   // Handle player death
   socket.on('playerDied', () => {
-    players[socket.id].isDead = true;
-    players[socket.id].lives -= 1;
-    socket.emit('playerRespawn', players[socket.id]);
+    if (players[socket.id]) {
+      players[socket.id].isDead = true;
+      players[socket.id].lives -= 1;
+      socket.emit('playerRespawn', players[socket.id]);
 
-    setTimeout(() => {
-      if (players[socket.id] && players[socket.id].lives > 0) {
-        players[socket.id].isDead = false;
-        players[socket.id].health = 100;
-        socket.emit('respawn', players[socket.id]);
-      } else {
-        socket.emit('gameOver', { message: 'Game Over! You are out of lives.' });
-      }
-    }, 5000);
+      setTimeout(() => {
+        if (players[socket.id] && players[socket.id].lives > 0) {
+          players[socket.id].isDead = false;
+          players[socket.id].health = 100;
+          socket.emit('respawn', players[socket.id]);
+        } else {
+          socket.emit('gameOver', { message: 'Game Over! You are out of lives.' });
+        }
+      }, 5000);
+    }
   });
 
   // Handle disconnect
