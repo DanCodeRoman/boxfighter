@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -766,23 +765,20 @@
 
  
 // Receive the list of current players (including yourself)
-socket.on('currentPlayers', (playersData) => {
-  Object.keys(playersData).forEach((id) => {
+socket.on('currentPlayers', (players) => {
+  // 'players' is an object keyed by socket IDs.
+  // Add every other player to our local state.
+  Object.keys(players).forEach((id) => {
     if (id !== socket.id) {
-      const p = playersData[id];
-      // Set a default size if not provided
-      p.size = 40;
-      otherPlayers[id] = p;
+      otherPlayers[id] = players[id];
     }
   });
 });
 
 // When a new player joins
 socket.on('newPlayer', (playerData) => {
-  // Set a default size if not provided
-  playerData.size = 40;
-  otherPlayers[playerData.id] = playerData;
-  console.log("New player added:", playerData);
+    otherPlayers[playerData.id] = playerData;
+    console.log("New player added:", playerData);
 });
 
 // When an existing player moves
@@ -894,30 +890,19 @@ function shootBullet() {
     let otherPlayers = {};
    
 function drawOtherPlayers() {
-  for (let id in otherPlayers) {
-    const otherPlayer = otherPlayers[id];
-
-    // Check if the player is within canvas bounds
-    if (
-      otherPlayer.x >= 0 &&
-      otherPlayer.x <= canvas.width &&
-      otherPlayer.y >= 0 &&
-      otherPlayer.y <= canvas.height
-    ) {
-      ctx.save();
-      ctx.translate(otherPlayer.x, otherPlayer.y);
-      ctx.drawImage(
-        playerImage,
-        -otherPlayer.size / 2,
-        -otherPlayer.size / 2,
-        otherPlayer.size,
-        otherPlayer.size
-      );
-      ctx.restore();
+    for (let id in otherPlayers) {
+        const otherPlayer = otherPlayers[id];
+    
+        
+        // Check if the player is within canvas bounds
+        if (otherPlayer.x >= 0 && otherPlayer.x <= canvas.width && otherPlayer.y >= 0 && otherPlayer.y <= canvas.height) {
+            ctx.save();
+            ctx.translate(otherPlayer.x, otherPlayer.y);
+            ctx.drawImage(playerImage, -otherPlayer.size / 2, -otherPlayer.size / 2, otherPlayer.size, otherPlayer.size);
+            ctx.restore();
+        }
     }
-  }
 }
-
 
     function drawEnemies() {
       for (let enemy of enemies) {
