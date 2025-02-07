@@ -84,7 +84,7 @@ io.on('connection', (socket) => {
 });
 
 // Start the server
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 10000;
 server.listen(port, () => {  // Use server.listen instead of http.listen
   console.log(`Server listening on port ${port}`);
 });
