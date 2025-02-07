@@ -853,7 +853,18 @@ socket.on('playerDisconnect', (id) => {
       ctx.drawImage(playerImage, -player.size/2, -player.size/2, player.size, player.size);
       ctx.restore();
     }
-    
+
+    function drawOpponents() {
+  for (const id in otherPlayers) {
+    const opponent = otherPlayers[id];
+    // For demonstration purposes, draw a simple blue circle
+    ctx.beginPath();
+    ctx.arc(opponent.x, opponent.y, player.size / 2, 0, Math.PI * 2);
+    ctx.fillStyle = "blue"; // Use a color that distinguishes the opponent
+    ctx.fill();
+  }
+}
+
     function drawEnemies() {
       for (let enemy of enemies) {
         ctx.shadowColor = enemy.type === "boss" ? "white" :
@@ -1523,6 +1534,7 @@ socket.on('playerDisconnect', (id) => {
       drawBullets();
       drawHealthBoosts();
       drawCoins();
+      drawOpponents():
       
       document.getElementById("score").textContent = `Score: ${score}`;
       
