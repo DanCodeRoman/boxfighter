@@ -822,9 +822,7 @@ socket.on('respawn', (playerData) => {
 });
 
 // Show respawn timer on screen
-function showRespawnTimer(timeLeft) {
-  document.getElementById("respawnTimer").textContent = `Respawning in ${timeLeft} seconds`;
-}
+
 
 
 // Send your shoot event to the server
@@ -1369,6 +1367,11 @@ function shootBullet() {
     socket.emit('playerDied');
   }
 }
+// Function to show respawn timer
+function showRespawnTimer(timeLeft) {
+  const respawnTimerElement = document.getElementById("respawnTimer");
+  respawnTimerElement.textContent = `Respawning in ${timeLeft} seconds`; // Update the timer text
+}
 
     function endGame() {
       if (gameMode === "challenge") {
@@ -1376,6 +1379,8 @@ function shootBullet() {
         document.getElementById("challengeTimer").style.display = "none";
       }
       document.getElementById("gameOverScreen").style.display = "flex";
+      document.getElementById("respawnTimer").style.display = "block"; // Show respawn timer text
+
       document.getElementById("finalScore").textContent = `Final Score: ${score}`;
       updateLeaderboard(score);
      let respawnTime = 5; // 5 seconds respawn timer
