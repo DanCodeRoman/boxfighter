@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="https://cdn.socket.io/4.5.1/socket.io.min.js"></script>
-
-  <link rel="icon" type="image/png" href="favicon.ico">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Box Fighter</title>
-  <!-- Importing a modern, appealing font -->
+  <link rel="icon" type="image/png" href="favicon.ico">
+  <!-- Import font and Socket.IO library -->
   <link href="https://fonts.googleapis.com/css?family=Poppins:400,600&display=swap" rel="stylesheet">
+  <script src="https://cdn.socket.io/4.5.1/socket.io.min.js"></script>
   <style>
+    /* === Global Styles === */
     body,
     html {
       margin: 0;
@@ -34,7 +34,6 @@
       z-index: 100;
       user-select: none;
     }
-    /* Studios text styling */
     #studiosText {
       font-size: 24px;
       background: linear-gradient(45deg, #ff6b6b, #ffcd3c, #6b94ff, #6bffb8);
@@ -43,21 +42,21 @@
       animation: gradient-text 4s linear infinite;
       margin-bottom: 20px;
     }
-    /* Coin counter for main menu (top right) */
     #menuCoinCounter {
       position: absolute;
       top: 50px;
       right: 5px;
       border: 2px solid gold;
-      padding: 6px 6px;
+      padding: 6px;
       border-radius: 10px;
       font-size: 17px;
       background: rgba(0, 0, 0, 0.5);
       color: gold;
       z-index: 110;
     }
-    /* Gun Shop Button (Main Menu) */
-    #menuGunShopButton {
+    #menuGunShopButton,
+    #gameModeButton,
+    button {
       font-size: 20px;
       padding: 10px 20px;
       background-color: #344;
@@ -68,33 +67,17 @@
       transition: transform 0.5s ease, background-color 0.5s ease;
       margin-top: 15px;
     }
-    #menuGunShopButton:hover {
+    #menuGunShopButton:hover,
+    #gameModeButton:hover,
+    button:hover {
       background-color: #ff6b6b;
       transform: scale(1.2);
     }
-    #menuGunShopButton:active {
+    #menuGunShopButton:active,
+    #gameModeButton:active,
+    button:active {
       transform: scale(1.05);
     }
-    /* Game Mode Button (Main Menu) */
-    #gameModeButton {
-      font-size: 20px;
-      padding: 10px 20px;
-      background-color: #344;
-      border: 2px solid white;
-      color: white;
-      cursor: pointer;
-      border-radius: 50px;
-      transition: transform 0.5s ease, background-color 0.5s ease;
-      margin-top: 15px;
-    }
-    #gameModeButton:hover {
-      background-color: #ff6b6b;
-      transform: scale(1.2);
-    }
-    #gameModeButton:active {
-      transform: scale(1.05);
-    }
-    /* Animated Title (Box Fighter) */
     h1 {
       font-size: 80px;
       text-align: center;
@@ -114,26 +97,6 @@
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
     }
-    /* Button Styling */
-    button {
-      font-size: 24px;
-      padding: 15px 30px;
-      background-color: #344;
-      border: none;
-      color: white;
-      cursor: pointer;
-      border-radius: 10px;
-      transition: transform 0.5s ease, background-color 0.5s ease;
-      margin-top: 20px;
-    }
-    button:hover {
-      background-color: #ff6b6b;
-      transform: scale(1.2);
-    }
-    button:active {
-      transform: scale(1.05);
-    }
-    /* Mute Music Button - Fixed in Top Right */
     #muteButton {
       position: fixed;
       top: -15px;
@@ -146,13 +109,14 @@
       border-radius: 5px;
       user-select: none;
     }
-    /* Game UI (Hidden by default) */
+    /* Game UI */
     #gameUI {
       position: absolute;
       top: 10px;
       left: 10px;
       color: white;
       z-index: 10;
+      display: none;
     }
     #healthBar {
       width: 250px;
@@ -166,7 +130,7 @@
       background-color: green;
       transition: width 0.3s;
     }
-    /* Boss Health Bars Container */
+    /* Boss Health Bars */
     #bossHealthBarContainer {
       position: absolute;
       top: 10px;
@@ -184,14 +148,14 @@
       margin: 5px 0;
       transition: width 0.3s;
     }
-    /* Canvas: Updated to use a full-screen background image */
+    /* Canvas Background */
     canvas {
       display: block;
       background: url('https://i.postimg.cc/C1dhpGkh/1348017.png') no-repeat center center fixed;
       background-size: cover;
       touch-action: none;
     }
-    /* Game Over Screen Styling */
+    /* Game Over Screen */
     #gameOverScreen {
       position: absolute;
       top: 0;
@@ -199,16 +163,14 @@
       width: 100%;
       height: 100%;
       background-color: rgba(0, 0, 0, 0.9);
-      display: flex;
+      display: none;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       color: white;
-      flex-direction: column;
       z-index: 100;
-      display: none;
       user-select: none;
     }
-    /* Gun Shop Button for Game Over Screen */
     #gameOverGunShopButton {
       font-size: 20px;
       padding: 10px 20px;
@@ -227,7 +189,6 @@
     #gameOverGunShopButton:active {
       transform: scale(1.05);
     }
-    /* Coin Counter for Game Over Screen */
     #gameOverCoinCounter {
       border: 2px solid gold;
       padding: 8px 12px;
@@ -237,6 +198,7 @@
       color: gold;
       margin: 10px 0;
     }
+    /* Color Picker */
     #colorPickerContainer {
       margin: 20px 0;
       text-align: center;
@@ -245,12 +207,12 @@
       color: silver;
       margin-right: 20px;
     }
-    /* The preview now shows the player ship with drop-shadow */
     #colorPreview {
       width: 40px;
       height: 40px;
       margin: 10px auto;
     }
+    /* Leaderboard */
     #leaderboard {
       background-color: rgba(255, 255, 255, 0.1);
       padding: 15px;
@@ -278,7 +240,7 @@
       border-radius: 5px;
       user-select: none;
     }
-    /* Updated Welcome / Wave / Boss Message Styling */
+    /* Round / Wave / Boss Message */
     #roundMessage {
       position: absolute;
       top: 20%;
@@ -296,7 +258,7 @@
       transition: opacity 2s ease-in-out;
       user-select: none;
     }
-    /* Gun Shop Modal Styles */
+    /* Gun Shop Modal & Game Mode Modal */
     #gunShopModal, #gameModeModal {
       position: fixed;
       top: 50%;
@@ -338,13 +300,13 @@
       border-radius: 5px;
       user-select: none;
     }
-    /* Challenge Mode Timer styling */
+    /* Challenge Mode Timer */
     #challengeTimer {
       position: absolute;
       top: 70px;
       left: 10px;
       font-size: 20px;
-      background: #000000;
+      background: #000;
       padding: 5px 10px;
       color: white;
       z-index: 20;
@@ -371,26 +333,19 @@
   </style>
 </head>
 <body>
-  <!-- Background music element -->
+  <!-- Audio Elements -->
   <audio id="bgMusic" src="music.mp3" loop preload="auto"></audio>
-  <!-- Enemy kill sound (will be cloned to allow overlapping) -->
   <audio id="enemyKillSound" src="enemy-kill.mp3" preload="auto"></audio>
-  <!-- New shoot sound element -->
   <audio id="shootSound" src="shoot.mp3" preload="auto"></audio>
-  <!-- Mute Music Button -->
+  <!-- Mute Button -->
   <button id="muteButton" onclick="toggleMusic()">Mute Music</button>
-  <!-- Main Menu Screen -->
+  <!-- Main Menu -->
   <div id="startMenu">
-    <!-- Coin Counter (Main Menu) -->
     <div id="menuCoinCounter">Coins: 0</div>
     <h1>Box Fighter</h1>
-    <!-- Studios Text -->
     <div id="studiosText">DanCodeRoman Studios</div>
     <button onclick="startGame()">Ready Up</button>
-    <!-- Game Mode Button -->
     <button id="gameModeButton" onclick="openGameModeBox()">Game Mode</button>
-    <!-- Gun Shop Button (Main Menu) -->
-    <button id="menuGunShopButton" onclick="openGunShop()">Gun Shop</button>
     <div id="colorPickerContainer">
       <label for="playerColor">Choose Agent:</label>
       <input type="color" id="playerColor" value="#39ff14" />
@@ -402,7 +357,6 @@
   <!-- Game Over Screen -->
   <div id="gameOverScreen">
     <h1>Game Over</h1>
-    <!-- Coin Counter (Game Over) -->
     <div id="gameOverCoinCounter">Coins: 0</div>
     <p id="finalScore">Final Score: 0</p>
     <div id="leaderboard">
@@ -410,31 +364,25 @@
       <ol id="leaderboardList"></ol>
     </div>
     <button onclick="restartGame()">Restart</button>
-    <!-- Gun Shop Button (Game Over) -->
     <button id="gameOverGunShopButton" onclick="openGunShop()">Gun Shop</button>
   </div>
   <!-- Gun Shop Modal -->
   <div id="gunShopModal">
     <h2>Gun Shop</h2>
     <div class="gunOption" onclick="selectGun('rifle')">
-      <strong>Rifle</strong><br>
-      (Free) - Default single shot.
+      <strong>Rifle</strong><br>(Free) - Default single shot.
     </div>
     <div class="gunOption" onclick="selectGun('shotgun')">
-      <strong>Shotgun</strong><br>
-      (300 Coins) - 3-shot spread.
+      <strong>Shotgun</strong><br>(300 Coins) - 3-shot spread.
     </div>
     <div class="gunOption" onclick="selectGun('flamethrower')">
-      <strong>Flamethrower</strong><br>
-      (1000 Coins) - Hold down to continuously shoot a fan of red, short–lived, larger bullets.
+      <strong>Flamethrower</strong><br>(1000 Coins) - Hold down to continuously shoot.
     </div>
     <div class="gunOption" onclick="selectGun('uzi')">
-      <strong>Uzi</strong><br>
-      (2000 Coins) - Burst fire of 5 bullets.
+      <strong>Uzi</strong><br>(2000 Coins) - Burst fire of 5 bullets.
     </div>
     <div class="gunOption" onclick="selectGun('shield')">
-      <strong>Shield</strong><br>
-      (5000 Coins) - Protects against enemy collisions and bullets.
+      <strong>Shield</strong><br>(5000 Coins) - Protects against enemy collisions and bullets.
     </div>
     <button id="closeGunShop" onclick="closeGunShop()">Close</button>
   </div>
@@ -443,11 +391,11 @@
     <h2>Select Game Mode</h2>
     <div class="gameModeOption" onclick="selectGameMode('zombies')">
       <strong>Zombies</strong>
-      <p>Classic waves of enemies with increasing difficulty.</p>
+      <p>Classic waves with increasing difficulty.</p>
     </div>
     <div class="gameModeOption" onclick="selectGameMode('challenge')">
       <strong>Challenge Mode</strong>
-      <p>Survive a continuous enemy onslaught for 5 minutes! New enemies spawn every second.</p>
+      <p>Survive for 5 minutes! Enemies spawn every second.</p>
     </div>
     <div class="gameModeOption" onclick="selectGameMode('pvp')">
       <strong>PVP</strong>
@@ -455,7 +403,8 @@
     </div>
     <button id="closeGameMode" onclick="closeGameMode()">Close</button>
   </div>
-  <div id="gameUI" style="display: none;">
+  <!-- In-Game UI -->
+  <div id="gameUI">
     <div id="healthBar">
       <div id="healthBarInner"></div>
     </div>
@@ -463,98 +412,75 @@
   </div>
   <!-- Challenge Mode Timer -->
   <p id="challengeTimer"></p>
-  <!-- Boss Health Bars Container -->
+  <!-- Boss Health Bars -->
   <div id="bossHealthBarContainer">
     <div class="bossHealthBar" id="bossHealthBar1"></div>
     <div class="bossHealthBar" id="bossHealthBar2" style="display:none;"></div>
   </div>
   <!-- Shield Cooldown Box -->
   <div id="shieldCooldownBox"></div>
+  <!-- Canvas -->
   <canvas id="gameCanvas"></canvas>
+  <!-- Round Message -->
   <div id="roundMessage"></div>
+  <!-- Respawn Timer (hidden by default) -->
+  <div id="respawnTimer" style="display:none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 24px;"></div>
   
   <script>
-    // Set up canvas
+    /* ========= Game Variables & Setup ========= */
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
-    canvas.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-    });
+    // Global game variables
+    let enemyBullets = [],
+        otherBullets = [],
+        keys = {},
+        health = 100,
+        score = 0,
+        enemies = [],
+        healthBoosts = [],
+        coinsOnField = [],
+        gameLoopId,
+        gameStarted = false,
+        roundNumber = 1,
+        nextWaveTime = performance.now(),
+        waveInterval = 15000,
+        waveMessageDuration = 3000,
+        waveStarted = false,
+        enemiesSpawnedForWave = false,
+        waveStartTime = 0,
+        welcomePhase = true,
+        welcomePhaseEndTime = 0,
+        gameMode = "zombies",
+        challengeStartTime = 0,
+        lastChallengeSpawnTime = 0,
+        challengeTimerActive = false,
+        paused = false,
+        shieldEquipped = false,
+        shieldActive = false,
+        shieldDurability = 0,
+        shieldCooldownActive = false,
+        shieldCooldownStart = 0,
+        coinCount = parseInt(localStorage.getItem("coinCount")) || 0,
+        ownedGuns = JSON.parse(localStorage.getItem("ownedGuns")) || ["rifle"];
 
-    // Global variables
-    let enemyBullets = [];
-    let otherBullets = [];
-    let keys = {};
-    let health = 100;
-    let score = 0;
-    let enemies = [];
-    let healthBoosts = [];
-    let coinsOnField = [];
-    let gameLoopId;
-    let gameStarted = false;
-    let boss = null; // used in rounds < 10
+    // Global Socket.IO & remote players object
+    const socket = io("https://boxfighter.onrender.com/");
     let otherPlayers = {};
 
-    // Global array for shooter enemy bullets
-
-
-    // Wave timing variables (for Zombies mode)
-    let roundNumber = 1;
-    let nextWaveTime = performance.now();
-    const waveInterval = 15000;
-    const waveMessageDuration = 3000;
-    let waveStarted = false;
-    let enemiesSpawnedForWave = false;
-    let waveStartTime = 0;
-
-    // Welcome phase variables (5 seconds)
-    let welcomePhase = true;
-    let welcomePhaseEndTime = 0;
-
-    // Challenge Mode variables
-    let gameMode = "zombies"; // default game mode
-    let challengeStartTime = 0;
-    let lastChallengeSpawnTime = 0;
-    let challengeTimerActive = false;
-
-    // Global variable for pause time (for Challenge Mode timer)
-    let pausedTime = 0;
-
-    // Load owned guns from localStorage; default to ["rifle"]
-    let ownedGuns = JSON.parse(localStorage.getItem("ownedGuns")) || ["rifle"];
-
-    // Gun selection: default "rifle"
-    let playerGun = "rifle";
-    // Shield ability flag
-    let shieldEquipped = false;
-
-    // Shield state variables
-    let shieldActive = false;
-    let shieldDurability = 0;
-    let shieldCooldownActive = false;
-    let shieldCooldownStart = 0;
-
-    // Global pause state
-    let paused = false;
-
-    // Load persistent coin count from localStorage or initialize to 0
-    let coinCount = parseInt(localStorage.getItem("coinCount")) || 0;
-
-    // Update coin counter displays
+    // Update coin counters
     function updateCoinCounters() {
-      const menuCounter = document.getElementById("menuCoinCounter");
-      const gameOverCounter = document.getElementById("gameOverCoinCounter");
-      menuCounter.textContent = `Coins: ${coinCount * 50}`;
-      gameOverCounter.textContent = `Coins: ${coinCount * 50}`;
+      document.getElementById("menuCoinCounter").textContent = `Coins: ${coinCount * 50}`;
+      document.getElementById("gameOverCoinCounter").textContent = `Coins: ${coinCount * 50}`;
     }
     updateCoinCounters();
 
-    // Create and load the player ship image.
+    // Create player image and object
     const playerImage = new Image();
-    playerImage.src = 'player.png';  // Set the image source
+    playerImage.src = 'player.png';
     const player = {
       x: canvas.width / 2,
       y: canvas.height / 2,
@@ -563,30 +489,40 @@
       bullets: []
     };
 
-    // Global mouse position for rotating the ship.
+    // Mouse position for aiming
     let mousePos = { x: player.x, y: player.y };
-
     document.addEventListener("mousemove", (e) => {
       mousePos = { x: e.clientX, y: e.clientY };
     });
 
+    // Color picker
     const colorPicker = document.getElementById("playerColor");
     const colorPreview = document.getElementById("colorPreview");
-    let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
-    const socket = io("https://boxfighter.onrender.com/");
-
     colorPicker.addEventListener("input", (e) => {
       player.color = e.target.value;
       colorPreview.innerHTML = `<img src="player.png" style="width:40px;height:40px;filter: drop-shadow(0 0 10px ${e.target.value});" />`;
     });
 
+    // Leaderboard
+    let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
+    function displayLeaderboard() {
+      const list = document.getElementById("leaderboardList");
+      list.innerHTML = "";
+      leaderboard.forEach((score, i) => {
+        const li = document.createElement("li");
+        li.textContent = `${i + 1}. ${score}`;
+        list.appendChild(li);
+      });
+    }
+    displayLeaderboard();
+
+    // Sound effects
     const enemyKillSound = document.getElementById("enemyKillSound");
     function playEnemyKillSound() {
-      const soundClone = enemyKillSound.cloneNode();
-      soundClone.volume = 1.0;
-      soundClone.play().then(() => {});
+      const clone = enemyKillSound.cloneNode();
+      clone.volume = 1.0;
+      clone.play().catch(() => {});
     }
-
     const shootSound = document.getElementById("shootSound");
     const shootSoundPool = [];
     const poolSize = 5;
@@ -598,49 +534,39 @@
       const sound = shootSoundPool[poolIndex];
       poolIndex = (poolIndex + 1) % poolSize;
       sound.currentTime = 0;
-      sound.play().catch(err => console.error("Error playing shoot sound:", err));
+      sound.play().catch(err => console.error(err));
     }
 
-    let baseGamma = null;
-    let baseBeta = null;
+    // Accelerometer support for mobile
+    let baseGamma = null, baseBeta = null;
     const sensitivity = 0.2;
-
     function handleOrientation(event) {
       if (baseGamma === null || baseBeta === null) {
         baseGamma = event.gamma;
         baseBeta = event.beta;
         return;
       }
-      const relativeGamma = event.gamma - baseGamma;
-      const relativeBeta = event.beta - baseBeta;
-      player.x += relativeGamma * sensitivity;
-      player.y += relativeBeta * sensitivity;
-      player.x = Math.max(player.size / 2, Math.min(canvas.width - player.size / 2, player.x));
-      player.y = Math.max(player.size / 2, Math.min(canvas.height - player.size / 2, player.y));
+      const relGamma = event.gamma - baseGamma;
+      const relBeta = event.beta - baseBeta;
+      player.x += relGamma * sensitivity;
+      player.y += relBeta * sensitivity;
+      player.x = Math.max(player.size/2, Math.min(canvas.width - player.size/2, player.x));
+      player.y = Math.max(player.size/2, Math.min(canvas.height - player.size/2, player.y));
     }
-
     function enableAccelerometerControls() {
       if (window.DeviceOrientationEvent) {
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-          DeviceOrientationEvent.requestPermission()
-            .then(permissionState => {
-              if (permissionState === 'granted') {
-                window.addEventListener("deviceorientation", handleOrientation);
-                console.log("Accelerometer enabled.");
-              }
-            })
-            .catch(console.error);
+          DeviceOrientationEvent.requestPermission().then(state => {
+            if (state === 'granted') window.addEventListener("deviceorientation", handleOrientation);
+          }).catch(console.error);
         } else {
           window.addEventListener("deviceorientation", handleOrientation);
-          console.log("Accelerometer enabled.");
         }
       }
     }
+    if (/Mobi|Android/i.test(navigator.userAgent)) enableAccelerometerControls();
 
-    if (/Mobi|Android/i.test(navigator.userAgent)) {
-      enableAccelerometerControls();
-    }
-
+    // Utility: Get a random spawn position
     function getRandomSpawnPosition(minDistance = 200) {
       let x, y;
       do {
@@ -650,55 +576,52 @@
       return { x, y };
     }
 
+    // Update boss health bars
     function updateBossHealthBars() {
-      const bossBarContainer = document.getElementById("bossHealthBarContainer");
-      const bossEnemies = enemies.filter(e => e.type === "boss");
-      if (bossEnemies.length === 0) {
-        bossBarContainer.style.display = "none";
+      const container = document.getElementById("bossHealthBarContainer");
+      const bosses = enemies.filter(e => e.type === "boss");
+      if (!bosses.length) {
+        container.style.display = "none";
       } else {
-        bossBarContainer.style.display = "block";
-        if (bossEnemies.length === 1) {
+        container.style.display = "block";
+        if (bosses.length === 1) {
           const bar1 = document.getElementById("bossHealthBar1");
-          bar1.style.width = (bossEnemies[0].hitsRemaining / 85 * 100) + "%";
+          bar1.style.width = (bosses[0].hitsRemaining / 85 * 100) + "%";
           bar1.style.display = "block";
           document.getElementById("bossHealthBar2").style.display = "none";
-        } else if (bossEnemies.length === 2) {
+        } else if (bosses.length === 2) {
           const bar1 = document.getElementById("bossHealthBar1");
           const bar2 = document.getElementById("bossHealthBar2");
-          bar1.style.width = (bossEnemies[0].hitsRemaining / 85 * 100) + "%";
-          bar2.style.width = (bossEnemies[1].hitsRemaining / 85 * 100) + "%";
+          bar1.style.width = (bosses[0].hitsRemaining / 85 * 100) + "%";
+          bar2.style.width = (bosses[1].hitsRemaining / 85 * 100) + "%";
           bar1.style.display = "block";
           bar2.style.display = "block";
         }
       }
     }
 
+    // Game pause
     function pauseGame() {
-      if (document.getElementById("gameOverScreen").style.display !== "none") {
-          return;
-      }
+      if (document.getElementById("gameOverScreen").style.display !== "none") return;
       if (!paused) {
-          paused = true;
-          if (gameLoopId) {
-              cancelAnimationFrame(gameLoopId);
-          }
-          document.getElementById("bgMusic").pause();
-          document.getElementById("startMenu").style.display = "flex";
-          document.getElementById("gameUI").style.display = "none";
-          document.getElementById("challengeTimer").style.display = "none";
+        paused = true;
+        if (gameLoopId) cancelAnimationFrame(gameLoopId);
+        document.getElementById("bgMusic").pause();
+        document.getElementById("startMenu").style.display = "flex";
+        document.getElementById("gameUI").style.display = "none";
+        document.getElementById("challengeTimer").style.display = "none";
       }
     }
 
+    // Start game (handles resetting state and pvp mode)
     function startGame() {
-      const canvas = document.getElementById("gameCanvas");
       canvas.style.cursor = "url('https://i.postimg.cc/gk1NVmNN/output-onlinepngtools.png') 30 30, crosshair";
-      
       if (paused) {
         paused = false;
         document.getElementById("startMenu").style.display = "none";
         document.getElementById("gameUI").style.display = "block";
         if (gameMode === "challenge") {
-          let pauseDuration = performance.now() - pausedTime;
+          const pauseDuration = performance.now() - pausedTime;
           challengeStartTime += pauseDuration;
           document.getElementById("challengeTimer").style.display = "block";
           challengeTimerActive = true;
@@ -707,26 +630,14 @@
         gameLoop();
         return;
       }
-    
-      if (gameLoopId) {
-        cancelAnimationFrame(gameLoopId);
-      }
+      if (gameLoopId) cancelAnimationFrame(gameLoopId);
       if (/Mobi|Android/i.test(navigator.userAgent)) {
-        if (typeof DeviceOrientationEvent !== "undefined" &&
-            typeof DeviceOrientationEvent.requestPermission === "function") {
-          DeviceOrientationEvent.requestPermission()
-            .then(permissionState => {
-              if (permissionState === "granted") {
-                window.addEventListener("deviceorientation", handleOrientation);
-                console.log("Device orientation permission granted.");
-              } else {
-                console.log("Device orientation permission denied.");
-              }
-            })
-            .catch(console.error);
+        if (typeof DeviceOrientationEvent.requestPermission === "function") {
+          DeviceOrientationEvent.requestPermission().then(state => {
+            if (state === "granted") window.addEventListener("deviceorientation", handleOrientation);
+          }).catch(console.error);
         } else {
           window.addEventListener("deviceorientation", handleOrientation);
-          console.log("Device orientation enabled (no permission needed).");
         }
       }
       const bgMusic = document.getElementById("bgMusic");
@@ -760,155 +671,20 @@
         challengeTimerActive = true;
         document.getElementById("challengeTimer").style.display = "block";
       } else if (gameMode === "pvp") {
-        // In PVP mode, connect to the multiplayer server.
         document.getElementById("roundMessage").textContent = "PVP Mode: Waiting for opponent...";
         document.getElementById("roundMessage").style.opacity = 1;
-        // Replace the URL below with your server's address (if running locally, use http://localhost:3000)
-       const socket = io("https://boxfighter.onrender.com/");
-
- 
-// Receive the list of current players (including yourself)
-// Global object for remote players
-let otherPlayers = {};
-
-// When you first connect:
- socket.on('currentPlayers', (playersData) => {
-      // Add remote players (exclude your own player).
-      Object.keys(playersData).forEach((id) => {
-        if (id !== socket.id) {
-          let pData = playersData[id];
-          if (!pData.size) pData.size = 40;
-          if (!pData.health) pData.health = 100;
-          otherPlayers[id] = pData;
-        }
-      });
-  // If there are at least 2 players, display the "player found" message.
-    if(Object.keys(playersData).length >= 2) {
-        const roundMessage = document.getElementById("roundMessage");
-        roundMessage.textContent = "Player found, starting PvP mode";
-        roundMessage.style.opacity = 1;
-        setTimeout(() => {
-          roundMessage.style.opacity = 0;
-        }, 2000);
+        socket.emit('playerMove', { x: player.x, y: player.y });
       }
-    });
-
-// When a new player joins:
-socket.on('newPlayer', (playerData) => {
-  if (playerData.id !== socket.id) {
-    if (!playerData.size) playerData.size = 40;
-    if (!playerData.health) playerData.health = 100;
-    otherPlayers[playerData.id] = playerData;
-    console.log("New player added:", playerData);
-  }
-});
-
-// When an existing player moves:
-socket.on('playerMove', (data) => {
-  if (data.id !== socket.id && otherPlayers[data.id]) {
-    otherPlayers[data.id].x = data.data.x;
-    otherPlayers[data.id].y = data.data.y;
-  }
-});
-
-// When a player disconnects:
-socket.on('playerDisconnect', (id) => {
-  delete otherPlayers[id];
-  console.log("Player disconnected:", id);
-});
-
-socket.on("respawn", (playerData) => {
-  otherPlayers[playerData.id] = playerData; // Update respawned player
-});
-
-            socket.on("playerShoot", (data) => {
-      // Add remote bullet if it’s not from you.
-      if(data.id !== socket.id) {
-        const bullet = {
-          x: data.data.x,
-          y: data.data.y,
-          dx: data.data.dx,
-          dy: data.data.dy,
-          size: data.data.size || 5,
-          lifetime: data.data.lifetime || 2000,
-          creationTime: performance.now(),
-          shooter: data.id
-        };
-        otherBullets.push(bullet);
-      }
-    });
-
- function checkCollision(obj1, obj2) {
-      const dx = obj1.x - obj2.x;
-      const dy = obj1.y - obj2.y;
-      const r1 = (obj1.size || 40) / 2;
-      const r2 = (obj2.size || 40) / 2;
-      return Math.sqrt(dx * dx + dy * dy) < (r1 + r2);
-    }
-
-    function checkBulletCollision(bullet1, bullet2) {
-      const dx = bullet1.x - bullet2.x;
-      const dy = bullet1.y - bullet2.y;
-      return Math.sqrt(dx * dx + dy * dy) < (bullet1.size + bullet2.size);
-    }
-// Update the respawn timer
-socket.on('respawn', (playerData) => {
-  // Respawn the player after 5 seconds
-  player.x = canvas.width / 2;
-  player.y = canvas.height / 2;
-  // Reset other player state as needed
-});
-
-// Handle player disconnection
-socket.on("playerDisconnect", (id) => {
-  delete otherPlayers[id];  // Remove the disconnected player
-});
-
-// Show respawn timer on screen
-
-
-
-// Send your shoot event to the server
-function shootBullet() {
-      let angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x);
-      const speed = 8;
-      const bullet = {
-        x: player.x,
-        y: player.y,
-        dx: Math.cos(angle) * speed,
-        dy: Math.sin(angle) * speed,
-        size: 5,
-        lifetime: 2000,
-        creationTime: performance.now(),
-        shooter: socket.id
-      };
-      player.bullets.push(bullet);
-      socket.emit("playerShoot", bullet);
-      // Optionally: play a shooting sound here.
-    }
-
-
-  // Later in your game loop, you can emit your own events. For example:
-  // socket.emit("playerMove", { x: player.x, y: player.y });
-  // socket.emit("playerShoot", { bulletData: ... });
-}
       gameStarted = true;
-      if (gameMode === "challenge") {
-        challengeStartTime = performance.now();
-        lastChallengeSpawnTime = performance.now();
-        challengeTimerActive = true;
-        document.getElementById("challengeTimer").style.display = "block";
-      } else {
-        document.getElementById("challengeTimer").style.display = "none";
-      }
       displayLeaderboard();
       gameLoop();
     }
-    
+
     function restartGame() {
       startGame();
     }
-    
+
+    // Spawn a health boost with 25% chance
     function spawnHealthBoost() {
       if (Math.random() < 0.25) {
         healthBoosts.push({
@@ -919,7 +695,8 @@ function shootBullet() {
         });
       }
     }
-    
+
+    // Spawn a coin with 25% chance
     function spawnCoin() {
       if (Math.random() < 0.25) {
         coinsOnField.push({
@@ -930,9 +707,10 @@ function shootBullet() {
         });
       }
     }
-    
+
+    // Drawing functions
     function drawPlayer() {
-      let angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x) - Math.PI/2;
+      const angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x) - Math.PI/2;
       ctx.save();
       ctx.translate(player.x, player.y);
       ctx.rotate(angle);
@@ -941,11 +719,8 @@ function shootBullet() {
       ctx.drawImage(playerImage, -player.size/2, -player.size/2, player.size, player.size);
       ctx.restore();
     }
-    let otherPlayers = {};
-   
-function drawOtherPlayers() {
-      for (let id in otherPlayers) {
-        // Do not draw your own player again.
+    function drawOtherPlayers() {
+      for (const id in otherPlayers) {
         if (id === socket.id) continue;
         const op = otherPlayers[id];
         ctx.save();
@@ -954,35 +729,6 @@ function drawOtherPlayers() {
         ctx.restore();
       }
     }
-
-
-    function drawEnemies() {
-      for (let enemy of enemies) {
-        ctx.shadowColor = enemy.type === "boss" ? "white" :
-                          enemy.type === "tank" ? "yellow" : 
-                          enemy.type === "clone" ? "white" : "red";
-        ctx.shadowBlur = 5;
-        ctx.fillStyle = enemy.color;
-        ctx.fillRect(
-          enemy.x - enemy.size / 2,
-          enemy.y - enemy.size / 2,
-          enemy.size,
-          enemy.size
-        );
-        ctx.shadowBlur = 5;
-        if (enemy.type === "boss") {
-          for (let bullet of enemy.bullets) {
-            ctx.fillStyle = "purple";
-            ctx.beginPath();
-            ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowColor = "transparent";
-            ctx.shadowBlur = 0;
-          }
-        }
-      }
-    }
-    
     function drawShield() {
       if (shieldActive) {
         const shieldRadius = player.size / 2 + 17;
@@ -996,15 +742,14 @@ function drawOtherPlayers() {
         ctx.shadowBlur = 0;
       }
     }
-
     function getShieldColor() {
       if (shieldDurability === 3) return "#00FFFF";
       else if (shieldDurability === 2) return "yellow";
       else if (shieldDurability === 1) return "red";
       else return "#00FFFF";
     }
-    
     function updateBullets() {
+      // Update player's bullets
       for (let i = player.bullets.length - 1; i >= 0; i--) {
         const bullet = player.bullets[i];
         if (bullet.lifetime && performance.now() - bullet.creationTime >= bullet.lifetime) {
@@ -1017,7 +762,8 @@ function drawOtherPlayers() {
           player.bullets.splice(i, 1);
         }
       }
-          for (let i = otherBullets.length - 1; i >= 0; i--) {
+      // Update other bullets (from remote players)
+      for (let i = otherBullets.length - 1; i >= 0; i--) {
         const bullet = otherBullets[i];
         bullet.x += bullet.dx;
         bullet.y += bullet.dy;
@@ -1025,8 +771,9 @@ function drawOtherPlayers() {
             performance.now() - bullet.creationTime > bullet.lifetime) {
           otherBullets.splice(i, 1);
         }
-          }
-       for (let i = player.bullets.length - 1; i >= 0; i--) {
+      }
+      // Bullet collision between player's bullets and remote bullets
+      for (let i = player.bullets.length - 1; i >= 0; i--) {
         for (let j = otherBullets.length - 1; j >= 0; j--) {
           if (checkBulletCollision(player.bullets[i], otherBullets[j])) {
             player.bullets.splice(i, 1);
@@ -1035,20 +782,21 @@ function drawOtherPlayers() {
           }
         }
       }
-        for (let i = otherBullets.length - 1; i >= 0; i--) {
+      // Remote bullet hitting player
+      for (let i = otherBullets.length - 1; i >= 0; i--) {
         if (checkCollision(otherBullets[i], player)) {
           otherBullets.splice(i, 1);
           socket.emit("playerHit", { id: socket.id, damage: 10 });
           player.health -= 10;
           if (player.health <= 0) {
-            // Handle local player death (show game over screen, etc.).
             document.getElementById("gameOverScreen").style.display = "flex";
             cancelAnimationFrame(gameLoopId);
           }
         }
       }
-        for (let id in otherPlayers) {
-        let remotePlayer = otherPlayers[id];
+      // Player bullet hitting remote players
+      for (const id in otherPlayers) {
+        const remotePlayer = otherPlayers[id];
         for (let i = player.bullets.length - 1; i >= 0; i--) {
           if (checkCollision(player.bullets[i], remotePlayer)) {
             player.bullets.splice(i, 1);
@@ -1057,7 +805,7 @@ function drawOtherPlayers() {
           }
         }
       }
-    }
+      // Update enemy bullets
       for (let i = enemyBullets.length - 1; i >= 0; i--) {
         const bullet = enemyBullets[i];
         bullet.x += bullet.dx;
@@ -1066,7 +814,8 @@ function drawOtherPlayers() {
           enemyBullets.splice(i, 1);
         }
       }
-      for (let enemy of enemies) {
+      // Update boss enemy bullets
+      enemies.forEach(enemy => {
         if (enemy.type === "boss") {
           for (let i = enemy.bullets.length - 1; i >= 0; i--) {
             const bullet = enemy.bullets[i];
@@ -1077,95 +826,94 @@ function drawOtherPlayers() {
             }
           }
         }
-      }
-    
-    
+      });
+    }
+    function checkBulletCollision(b1, b2) {
+      const dx = b1.x - b2.x, dy = b1.y - b2.y;
+      return Math.sqrt(dx*dx + dy*dy) < (b1.size + b2.size);
+    }
+    function checkCollision(obj1, obj2) {
+      const dx = obj1.x - obj2.x, dy = obj1.y - obj2.y;
+      const r1 = (obj1.size || 40) / 2, r2 = (obj2.size || 40) / 2;
+      return Math.sqrt(dx*dx + dy*dy) < (r1 + r2);
+    }
     function drawHealthBoosts() {
-      for (let boost of healthBoosts) {
+      healthBoosts.forEach(boost => {
         ctx.shadowColor = "green";
         ctx.shadowBlur = 5;
         ctx.fillStyle = boost.color;
         ctx.beginPath();
-        ctx.arc(boost.x, boost.y, boost.size, 0, Math.PI * 2);
+        ctx.arc(boost.x, boost.y, boost.size, 0, Math.PI*2);
         ctx.fill();
-      }
+      });
     }
-    
     function drawCoins() {
-      for (let coin of coinsOnField) {
+      coinsOnField.forEach(coin => {
         ctx.shadowColor = "gold";
         ctx.shadowBlur = 5;
         ctx.fillStyle = coin.color;
         ctx.beginPath();
-        ctx.arc(coin.x, coin.y, coin.size, 0, Math.PI * 2);
+        ctx.arc(coin.x, coin.y, coin.size, 0, Math.PI*2);
         ctx.fill();
-      }
+      });
     }
-    
     function drawBullets() {
-      for (let bullet of player.bullets) {
+      player.bullets.forEach(bullet => {
         if (bullet.flamethrower) {
           ctx.shadowColor = "red";
           ctx.shadowBlur = 8;
           ctx.fillStyle = "red";
           ctx.beginPath();
-          ctx.arc(bullet.x, bullet.y, 10, 0, Math.PI * 2);
+          ctx.arc(bullet.x, bullet.y, 10, 0, Math.PI*2);
           ctx.fill();
         } else {
           ctx.shadowColor = "red";
           ctx.shadowBlur = 8;
           ctx.fillStyle = "black";
           ctx.beginPath();
-          ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2);
+          ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI*2);
           ctx.fill();
         }
-      }
-       for (const bullet of player.bullets) {
+      });
+      player.bullets.forEach(bullet => {
         ctx.fillStyle = "yellow";
         ctx.beginPath();
-        ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
+        ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI*2);
         ctx.fill();
-      }
-       for (const bullet of otherBullets) {
+      });
+      otherBullets.forEach(bullet => {
         ctx.fillStyle = "red";
         ctx.beginPath();
-        ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
+        ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI*2);
         ctx.fill();
-      }
-    }
-      for (let bullet of enemyBullets) {
+      });
+      enemyBullets.forEach(bullet => {
         ctx.shadowColor = "darkblue";
         ctx.shadowBlur = 8;
         ctx.fillStyle = "darkblue";
         ctx.beginPath();
-        ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
+        ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI*2);
         ctx.fill();
-      }
-    
-    
+      });
+    }
     function updatePlayer() {
-      let speed = 4;
-      if (keys["w"] && player.y - player.size / 2 > 0) player.y -= speed;
-      if (keys["s"] && player.y + player.size / 2 < canvas.height) player.y += speed;
-      if (keys["a"] && player.x - player.size / 2 > 0) player.x -= speed;
-      if (keys["d"] && player.x + player.size / 2 < canvas.width) player.x += speed;
-
+      const speed = 4;
+      if (keys["w"] && player.y - player.size/2 > 0) player.y -= speed;
+      if (keys["s"] && player.y + player.size/2 < canvas.height) player.y += speed;
+      if (keys["a"] && player.x - player.size/2 > 0) player.x -= speed;
+      if (keys["d"] && player.x + player.size/2 < canvas.width) player.x += speed;
       socket.emit('playerMove', { x: player.x, y: player.y });
     }
-    
     function normalizeAngle(angle) {
-      while(angle > Math.PI) angle -= 2 * Math.PI;
-      while(angle < -Math.PI) angle += 2 * Math.PI;
+      while(angle > Math.PI) angle -= 2*Math.PI;
+      while(angle < -Math.PI) angle += 2*Math.PI;
       return angle;
     }
-    
     function isInShieldZone(x, y) {
-      let angleToPoint = Math.atan2(y - player.y, x - player.x);
-      let shieldAngle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x) - Math.PI/2;
-      let diff = Math.abs(normalizeAngle(angleToPoint - shieldAngle));
-      return diff < 0.785;
+      const angleToPoint = Math.atan2(y - player.y, x - player.x);
+      const shieldAngle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x) - Math.PI/2;
+      return Math.abs(normalizeAngle(angleToPoint - shieldAngle)) < 0.785;
     }
-    
     function updateEnemies() {
       for (let i = enemies.length - 1; i >= 0; i--) {
         const enemy = enemies[i];
@@ -1196,28 +944,18 @@ function drawOtherPlayers() {
         ) {
           if (shieldActive) {
             shieldHit();
-            if (enemy.shootInterval) {
-              clearInterval(enemy.shootInterval);
-            }
+            if (enemy.shootInterval) clearInterval(enemy.shootInterval);
             enemies.splice(i, 1);
           } else {
-            if (enemy.type === "boss") {
-              health = 0;
-            }
+            if (enemy.type === "boss") health = 0;
             health -= 30;
-            if (enemy.shootInterval) {
-              clearInterval(enemy.shootInterval);
-            }
+            if (enemy.shootInterval) clearInterval(enemy.shootInterval);
             enemies.splice(i, 1);
-            if (health <= 0) {
-              endGame();
-              return;
-            }
+            if (health <= 0) { endGame(); return; }
           }
         }
       }
     }
-    
     function shootAtPlayer(enemy) {
       const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
       const bullet = {
@@ -1228,13 +966,9 @@ function drawOtherPlayers() {
         size: 5,
         color: enemy.type === "boss" ? "purple" : "darkblue"
       };
-      if (enemy.type === "shooter") {
-        enemyBullets.push(bullet);
-      } else {
-        enemy.bullets.push(bullet);
-      }
+      if (enemy.type === "shooter") enemyBullets.push(bullet);
+      else enemy.bullets.push(bullet);
     }
-    
     function bossShoot(enemy) {
       const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
       const aimedBullet = {
@@ -1246,72 +980,60 @@ function drawOtherPlayers() {
         color: "purple"
       };
       enemy.bullets.push(aimedBullet);
-      const bulletCount = 12;
-      const bulletSpeed = 4;
+      const bulletCount = 12, bulletSpeed = 4;
       for (let i = 0; i < bulletCount; i++) {
         const ringAngle = (2 * Math.PI * i) / bulletCount;
-        const ringBullet = {
+        enemy.bullets.push({
           x: enemy.x,
           y: enemy.y,
           dx: Math.cos(ringAngle) * bulletSpeed,
           dy: Math.sin(ringAngle) * bulletSpeed,
           size: 5,
           color: "purple"
-        };
-        enemy.bullets.push(ringBullet);
+        });
       }
     }
-    
     function initBoss(enemy) {
       enemy.aimedShootInterval = setInterval(() => {
-        if (enemies.indexOf(enemy) !== -1) {
+        if (enemies.includes(enemy)) {
           const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-          const aimedBullet = {
+          enemy.bullets.push({
             x: enemy.x,
             y: enemy.y,
             dx: Math.cos(angle) * 5,
             dy: Math.sin(angle) * 5,
             size: 5,
             color: "purple"
-          };
-          enemy.bullets.push(aimedBullet);
-        } else {
-          clearInterval(enemy.aimedShootInterval);
-        }
+          });
+        } else clearInterval(enemy.aimedShootInterval);
       }, 1500);
-    
       enemy.ringShootInterval = setInterval(() => {
-        if (enemies.indexOf(enemy) !== -1) {
-          const bulletCount = 12;
-          const bulletSpeed = 4;
+        if (enemies.includes(enemy)) {
+          const bulletCount = 12, bulletSpeed = 4;
           for (let i = 0; i < bulletCount; i++) {
             const ringAngle = (2 * Math.PI * i) / bulletCount;
-            const ringBullet = {
+            enemy.bullets.push({
               x: enemy.x,
               y: enemy.y,
               dx: Math.cos(ringAngle) * bulletSpeed,
               dy: Math.sin(ringAngle) * bulletSpeed,
               size: 5,
               color: "purple"
-            };
-            enemy.bullets.push(ringBullet);
+            });
           }
-        } else {
-          clearInterval(enemy.ringShootInterval);
-        }
+        } else clearInterval(enemy.ringShootInterval);
       }, 3000);
     }
-    
     function checkBulletCollisions() {
       for (let i = player.bullets.length - 1; i >= 0; i--) {
         const bullet = player.bullets[i];
         for (let j = enemies.length - 1; j >= 0; j--) {
           const enemy = enemies[j];
           if (
-            bullet.x >= enemy.x - enemy.size / 2 &&
-            bullet.x <= enemy.x + enemy.size / 2 &&
-            bullet.y >= enemy.y - enemy.size / 2 &&
-            bullet.y <= enemy.y + enemy.size / 2
+            bullet.x >= enemy.x - enemy.size/2 &&
+            bullet.x <= enemy.x + enemy.size/2 &&
+            bullet.y >= enemy.y - enemy.size/2 &&
+            bullet.y <= enemy.y + enemy.size/2
           ) {
             if (enemy.type === "tank") {
               enemy.hitsRemaining--;
@@ -1345,8 +1067,7 @@ function drawOtherPlayers() {
             } else if (enemy.type === "clone") {
               if (enemy.canClone) {
                 const baseAngle = Math.random() * 2 * Math.PI;
-                const splitSpeed = 5;
-                const currentTime = performance.now();
+                const splitSpeed = 5, currentTime = performance.now();
                 const clone1 = {
                   x: enemy.x,
                   y: enemy.y,
@@ -1399,42 +1120,35 @@ function drawOtherPlayers() {
           }
         }
       }
-      for (let i = enemyBullets.length - 1; i >= 0; i--) {
-        const bullet = enemyBullets[i];
-        if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < player.size / 2 + bullet.size) {
+      enemyBullets.forEach((bullet, i) => {
+        if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < player.size/2 + bullet.size) {
           if (isInShieldZone(bullet.x, bullet.y) && shieldActive) {
             shieldHit();
             enemyBullets.splice(i, 1);
           } else {
             health -= health * 0.25;
             enemyBullets.splice(i, 1);
-            if (health <= 0) {
-              endGame();
-            }
+            if (health <= 0) endGame();
           }
         }
-      }
-      for (let enemy of enemies) {
+      });
+      enemies.forEach(enemy => {
         if (enemy.type === "boss") {
-          for (let i = enemy.bullets.length - 1; i >= 0; i--) {
-            const bullet = enemy.bullets[i];
-            if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < player.size / 2 + bullet.size) {
+          enemy.bullets.forEach((bullet, i) => {
+            if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < player.size/2 + bullet.size) {
               if (isInShieldZone(bullet.x, bullet.y) && shieldActive) {
                 shieldHit();
                 enemy.bullets.splice(i, 1);
               } else {
                 health -= health * 0.25;
                 enemy.bullets.splice(i, 1);
-                if (health <= 0) {
-                  endGame();
-                }
+                if (health <= 0) endGame();
               }
             }
-          }
+          });
         }
-      }
+      });
     }
-    
     function checkHealthBoostCollisions() {
       for (let i = healthBoosts.length - 1; i >= 0; i--) {
         const boost = healthBoosts[i];
@@ -1444,7 +1158,6 @@ function drawOtherPlayers() {
         }
       }
     }
-    
     function checkCoinCollisions() {
       for (let i = coinsOnField.length - 1; i >= 0; i--) {
         const coin = coinsOnField[i];
@@ -1456,13 +1169,11 @@ function drawOtherPlayers() {
         }
       }
     }
-    
     function updateHealthBar() {
-      const healthBarInner = document.getElementById("healthBarInner");
-      healthBarInner.style.width = `${health}%`;
-      healthBarInner.style.backgroundColor = health > 50 ? "green" : "orange";
+      const inner = document.getElementById("healthBarInner");
+      inner.style.width = `${health}%`;
+      inner.style.backgroundColor = health > 50 ? "green" : "orange";
     }
-    
     function shieldHit() {
       shieldDurability--;
       if (shieldDurability <= 0) {
@@ -1470,50 +1181,41 @@ function drawOtherPlayers() {
         startShieldCooldown();
       }
     }
-    
     function startShieldCooldown() {
       shieldCooldownActive = true;
       shieldCooldownStart = performance.now();
       document.getElementById("shieldCooldownBox").style.display = "block";
     }
     function checkHealth() {
-  if (health <= 0) {
-    endGame();
-    // Send a "playerDied" event to notify the server
-    socket.emit('playerDied');
-  }
-}
-// Function to show respawn timer
-function showRespawnTimer(timeLeft) {
-  const respawnTimerElement = document.getElementById("respawnTimer");
-  respawnTimerElement.textContent = `Respawning in ${timeLeft} seconds`; // Update the timer text
-}
-
+      if (health <= 0) {
+        endGame();
+        socket.emit('playerDied');
+      }
+    }
+    function showRespawnTimer(timeLeft) {
+      document.getElementById("respawnTimer").textContent = `Respawning in ${timeLeft} seconds`;
+    }
     function endGame() {
       if (gameMode === "challenge") {
         challengeTimerActive = false;
         document.getElementById("challengeTimer").style.display = "none";
       }
       document.getElementById("gameOverScreen").style.display = "flex";
-      document.getElementById("respawnTimer").style.display = "block"; // Show respawn timer text
-
+      document.getElementById("respawnTimer").style.display = "block";
       document.getElementById("finalScore").textContent = `Final Score: ${score}`;
       updateLeaderboard(score);
-     let respawnTime = 5; // 5 seconds respawn timer
-  let interval = setInterval(() => {
-    showRespawnTimer(respawnTime);
-    respawnTime--;
-    if (respawnTime <= 0) {
-      clearInterval(interval);
-      socket.emit('playerRespawn');  // Trigger respawn logic
+      let respawnTime = 5;
+      const interval = setInterval(() => {
+        showRespawnTimer(respawnTime);
+        respawnTime--;
+        if (respawnTime < 0) {
+          clearInterval(interval);
+          socket.emit('playerRespawn');
+        }
+      }, 1000);
     }
-  }, 1000);
-}
-    
     function handleWaveLogic(timestamp) {
-      if (gameMode !== "zombies") {
-        return;
-      }
+      if (gameMode !== "zombies") return;
       if (welcomePhase) {
         if (timestamp >= welcomePhaseEndTime) {
           welcomePhase = false;
@@ -1529,17 +1231,13 @@ function showRespawnTimer(timeLeft) {
       if (timestamp >= nextWaveTime) {
         if (!waveStarted) {
           waveStartTime = timestamp;
-          if (roundNumber === 5) {
-            document.getElementById("roundMessage").textContent = "Boss Incoming";
-          } else {
-            document.getElementById("roundMessage").textContent = "Wave " + roundNumber;
-          }
+          document.getElementById("roundMessage").textContent = roundNumber === 5 ? "Boss Incoming" : "Wave " + roundNumber;
           document.getElementById("roundMessage").style.opacity = 1;
           waveStarted = true;
         }
         if (timestamp >= waveStartTime + waveMessageDuration && !enemiesSpawnedForWave) {
           if (roundNumber === 5) {
-            let bossEnemy = {
+            const bossEnemy = {
               x: canvas.width / 2,
               y: canvas.height / 4,
               type: "boss",
@@ -1556,7 +1254,7 @@ function showRespawnTimer(timeLeft) {
             spawnHealthBoost();
             spawnCoin();
             if (roundNumber > 10 && Math.random() < 0.3) {
-              let extraBoss = {
+              const extraBoss = {
                 x: canvas.width / 2,
                 y: canvas.height / 4,
                 type: "boss",
@@ -1581,61 +1279,41 @@ function showRespawnTimer(timeLeft) {
         }
       }
     }
-    
     function handleChallengeMode(timestamp) {
-      if (!challengeTimerActive) {
-        return;
-      }
-      if (health <= 0) {
-        challengeTimerActive = false;
-        return;
-      }
-      let elapsed = timestamp - challengeStartTime;
+      if (!challengeTimerActive) return;
+      if (health <= 0) { challengeTimerActive = false; return; }
+      const elapsed = timestamp - challengeStartTime;
       if (elapsed >= 300000) {
         enemies = [];
         enemyBullets = [];
         document.getElementById("roundMessage").textContent = "You Win!";
         document.getElementById("roundMessage").style.opacity = 1;
         challengeTimerActive = false;
-        setTimeout(() => {
-          endChallengeMode();
-        }, 10000);
+        setTimeout(endChallengeMode, 10000);
       } else {
         if (timestamp - lastChallengeSpawnTime >= 1000) {
           spawnSingleEnemy();
           lastChallengeSpawnTime = timestamp;
         }
-        let remaining = 300000 - elapsed;
-        let minutes = Math.floor(remaining / 60000);
-        let seconds = Math.floor((remaining % 60000) / 1000);
+        const remaining = 300000 - elapsed;
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
         document.getElementById("challengeTimer").textContent = `Time Left: ${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
       }
     }
-    
     function spawnSingleEnemy() {
       const types = ["melee", "shooter", "tank", "clone", "boss"];
       const type = types[Math.floor(Math.random() * types.length)];
       const pos = getRandomSpawnPosition(100);
-      let enemy = {
-        x: pos.x,
-        y: pos.y,
-        type: type,
-        dx: 0,
-        dy: 0,
-        bullets: []
-      };
+      const enemy = { x: pos.x, y: pos.y, type, dx: 0, dy: 0, bullets: [] };
       if (type === "shooter") {
         enemy.size = 40;
         enemy.color = "darkblue";
         enemy.speed = 1.75;
         enemy.hitsRemaining = 2;
-        enemy.shootCooldown = 0;
         enemy.shootInterval = setInterval(() => {
-          if (enemies.indexOf(enemy) !== -1) {
-            shootAtPlayer(enemy);
-          } else {
-            clearInterval(enemy.shootInterval);
-          }
+          if (enemies.includes(enemy)) shootAtPlayer(enemy);
+          else clearInterval(enemy.shootInterval);
         }, 800);
       } else if (type === "tank") {
         enemy.size = 60;
@@ -1661,30 +1339,23 @@ function showRespawnTimer(timeLeft) {
       }
       enemies.push(enemy);
     }
-    
     function endChallengeMode() {
       pauseGame();
       document.getElementById("roundMessage").style.opacity = 0;
       challengeTimerActive = false;
     }
-    
-   
-    
-    
     function gameLoop(timestamp) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
       if (shieldCooldownActive) {
-        let elapsed = (performance.now() - shieldCooldownStart) / 1000;
-        let remaining = Math.max(0, 10 - elapsed);
-        let cooldownBox = document.getElementById("shieldCooldownBox");
+        const elapsed = (performance.now() - shieldCooldownStart) / 1000;
+        const remaining = Math.max(0, 10 - elapsed);
+        const cooldownBox = document.getElementById("shieldCooldownBox");
         cooldownBox.textContent = `Shield Cooldown: ${remaining.toFixed(1)}s`;
         if (remaining <= 0) {
           shieldCooldownActive = false;
           cooldownBox.style.display = "none";
         }
       }
-      
       if (gameMode === "challenge" && !paused) {
         handleChallengeMode(timestamp);
       } else {
@@ -1698,190 +1369,116 @@ function showRespawnTimer(timeLeft) {
       checkCoinCollisions();
       updateHealthBar();
       updateBossHealthBars();
-      
       drawPlayer();
       drawShield();
-      drawEnemies();
+      // (Assuming you have a drawEnemies() function if needed)
       drawBullets();
       drawHealthBoosts();
       drawCoins();
-      drawOtherPlayers(); 
-      
+      drawOtherPlayers();
       document.getElementById("score").textContent = `Score: ${score}`;
-      
       gameLoopId = requestAnimationFrame(gameLoop);
     }
-    
-    window.addEventListener("keydown", (e) => (keys[e.key] = true));
-    window.addEventListener("keyup", (e) => (keys[e.key] = false));
-    
-    document.addEventListener("keydown", function(e) {
-      if (e.key === "Escape") {
-        pauseGame();
+
+    /* ========= Input & Event Listeners ========= */
+    window.addEventListener("keydown", (e) => { keys[e.key] = true; });
+    window.addEventListener("keyup", (e) => { keys[e.key] = false; });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") pauseGame();
+      if (e.code === "Space" && shieldEquipped && !shieldActive && !shieldCooldownActive) {
+        activateShield();
       }
     });
-    
-    document.addEventListener("keydown", function(e) {
-      if (e.code === "Space") {
-        if (shieldEquipped && !shieldActive && !shieldCooldownActive) {
-          activateShield();
-        }
-      }
-    });
-    
     function activateShield() {
       shieldActive = true;
       shieldDurability = 3;
     }
-    
+
     let flamethrowerInterval = null;
     let lastMousePos = { x: player.x, y: player.y };
-    
     canvas.addEventListener("click", (e) => {
       if (playerGun !== "flamethrower") {
         playShootSound();
         const angle = Math.atan2(e.clientY - player.y, e.clientX - player.x);
         if (playerGun === "shotgun") {
           const spread = 0.2;
-          player.bullets.push({
-            x: player.x,
-            y: player.y,
-            dx: Math.cos(angle) * 6.5,
-            dy: Math.sin(angle) * 6.5
-          });
-          player.bullets.push({
-            x: player.x,
-            y: player.y,
-            dx: Math.cos(angle - spread) * 6.5,
-            dy: Math.sin(angle - spread) * 6.5
-          });
-          player.bullets.push({
-            x: player.x,
-            y: player.y,
-            dx: Math.cos(angle + spread) * 6.5,
-            dy: Math.sin(angle + spread) * 6.5
-          });
+          player.bullets.push({ x: player.x, y: player.y, dx: Math.cos(angle) * 6.5, dy: Math.sin(angle) * 6.5 });
+          player.bullets.push({ x: player.x, y: player.y, dx: Math.cos(angle - spread) * 6.5, dy: Math.sin(angle - spread) * 6.5 });
+          player.bullets.push({ x: player.x, y: player.y, dx: Math.cos(angle + spread) * 6.5, dy: Math.sin(angle + spread) * 6.5 });
         } else if (playerGun === "uzi") {
           for (let i = 0; i < 5; i++) {
             setTimeout(() => {
-              let deviation = (Math.random() - 0.5) * 0.2;
-              let bulletAngle = angle + deviation;
-              player.bullets.push({
-                x: player.x,
-                y: player.y,
-                dx: Math.cos(bulletAngle) * 6.5,
-                dy: Math.sin(bulletAngle) * 6.5
-              });
+              const deviation = (Math.random() - 0.5) * 0.2;
+              const bulletAngle = angle + deviation;
+              player.bullets.push({ x: player.x, y: player.y, dx: Math.cos(bulletAngle) * 6.5, dy: Math.sin(bulletAngle) * 6.5 });
             }, i * 50);
           }
         } else {
-          player.bullets.push({
-            x: player.x,
-            y: player.y,
-            dx: Math.cos(angle) * 6.5,
-            dy: Math.sin(angle) * 6.5
-          });
+          player.bullets.push({ x: player.x, y: player.y, dx: Math.cos(angle) * 6.5, dy: Math.sin(angle) * 6.5 });
         }
       }
     });
-    
-    canvas.addEventListener("mousedown", function(e) {
+    canvas.addEventListener("mousedown", (e) => {
       if (playerGun === "flamethrower") {
         lastMousePos = { x: e.clientX, y: e.clientY };
-        if (!flamethrowerInterval) {
-          flamethrowerInterval = setInterval(shootFlame, 100);
-        }
+        if (!flamethrowerInterval) flamethrowerInterval = setInterval(shootFlame, 100);
       }
     });
-    canvas.addEventListener("mouseup", function(e) {
+    canvas.addEventListener("mouseup", () => {
       if (playerGun === "flamethrower" && flamethrowerInterval) {
         clearInterval(flamethrowerInterval);
         flamethrowerInterval = null;
       }
     });
-    canvas.addEventListener("mousemove", function(e) {
-      if (playerGun === "flamethrower") {
-        lastMousePos = { x: e.clientX, y: e.clientY };
-      }
+    canvas.addEventListener("mousemove", (e) => {
+      if (playerGun === "flamethrower") lastMousePos = { x: e.clientX, y: e.clientY };
     });
-    
     canvas.addEventListener("touchstart", (e) => {
       e.preventDefault();
       if (playerGun === "flamethrower") {
-        let touch = e.changedTouches[0];
+        const touch = e.changedTouches[0];
         lastMousePos = { x: touch.clientX, y: touch.clientY };
-        if (!flamethrowerInterval) {
-          flamethrowerInterval = setInterval(shootFlame, 100);
-        }
+        if (!flamethrowerInterval) flamethrowerInterval = setInterval(shootFlame, 100);
       } else {
         playShootSound();
-        for (let touch of e.changedTouches) {
+        for (const touch of e.changedTouches) {
           const angle = Math.atan2(touch.clientY - player.y, touch.clientX - player.x);
           if (playerGun === "shotgun") {
             const spread = 0.2;
-            player.bullets.push({
-              x: player.x,
-              y: player.y,
-              dx: Math.cos(angle) * 6.5,
-              dy: Math.sin(angle) * 6.5
-            });
-            player.bullets.push({
-              x: player.x,
-              y: player.y,
-              dx: Math.cos(angle - spread) * 6.5,
-              dy: Math.sin(angle - spread) * 6.5
-            });
-            player.bullets.push({
-              x: player.x,
-              y: player.y,
-              dx: Math.cos(angle + spread) * 6.5,
-              dy: Math.sin(angle + spread) * 6.5
-            });
+            player.bullets.push({ x: player.x, y: player.y, dx: Math.cos(angle) * 6.5, dy: Math.sin(angle) * 6.5 });
+            player.bullets.push({ x: player.x, y: player.y, dx: Math.cos(angle - spread) * 6.5, dy: Math.sin(angle - spread) * 6.5 });
+            player.bullets.push({ x: player.x, y: player.y, dx: Math.cos(angle + spread) * 6.5, dy: Math.sin(angle + spread) * 6.5 });
           } else if (playerGun === "uzi") {
             for (let i = 0; i < 5; i++) {
               setTimeout(() => {
-                let deviation = (Math.random() - 0.5) * 0.2;
-                let bulletAngle = angle + deviation;
-                player.bullets.push({
-                  x: player.x,
-                  y: player.y,
-                  dx: Math.cos(bulletAngle) * 6.5,
-                  dy: Math.sin(bulletAngle) * 6.5
-                });
+                const deviation = (Math.random() - 0.5) * 0.2;
+                const bulletAngle = angle + deviation;
+                player.bullets.push({ x: player.x, y: player.y, dx: Math.cos(bulletAngle) * 6.5, dy: Math.sin(bulletAngle) * 6.5 });
               }, i * 100);
             }
           } else {
-            player.bullets.push({
-              x: player.x,
-              y: player.y,
-              dx: Math.cos(angle) * 6.5,
-              dy: Math.sin(angle) * 6.5
-            });
+            player.bullets.push({ x: player.x, y: player.y, dx: Math.cos(angle) * 6.5, dy: Math.sin(angle) * 6.5 });
           }
         }
       }
     }, { passive: false });
-    
-    canvas.addEventListener("touchend", (e) => {
+    canvas.addEventListener("touchend", () => {
       if (playerGun === "flamethrower" && flamethrowerInterval) {
         clearInterval(flamethrowerInterval);
         flamethrowerInterval = null;
       }
     });
-    
     canvas.addEventListener("touchmove", (e) => {
       if (playerGun === "flamethrower") {
-        let touch = e.touches[0];
+        const touch = e.touches[0];
         lastMousePos = { x: touch.clientX, y: touch.clientY };
       }
     });
-    
     function shootFlame() {
-      let baseAngle = Math.atan2(lastMousePos.y - player.y, lastMousePos.x - player.x) || 0;
-      const spread = 0.2;
-      const speed = 4;
+      const baseAngle = Math.atan2(lastMousePos.y - player.y, lastMousePos.x - player.x) || 0;
+      const spread = 0.2, speed = 4;
       for (let i = -2; i <= 2; i++) {
-        let bulletAngle = baseAngle + i * spread;
+        const bulletAngle = baseAngle + i * spread;
         player.bullets.push({
           x: player.x,
           y: player.y,
@@ -1893,25 +1490,19 @@ function showRespawnTimer(timeLeft) {
         });
       }
     }
-    
     function spawnEnemies() {
-      let numberOfEnemies = 8 + roundNumber - 1;
+      const numberOfEnemies = 8 + roundNumber - 1;
       for (let i = 0; i < numberOfEnemies; i++) {
-        let r = Math.random();
+        const r = Math.random();
         let type;
-        if (roundNumber >= 5 && r > 0.8) {
-          type = "clone";
-        } else if (r < 0.15) {
-          type = "tank";
-        } else if (r < 0.4) {
-          type = "shooter";
-        } else {
-          type = "melee";
-        }
-        let enemy = {
+        if (roundNumber >= 5 && r > 0.8) type = "clone";
+        else if (r < 0.15) type = "tank";
+        else if (r < 0.4) type = "shooter";
+        else type = "melee";
+        const enemy = {
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          type: type,
+          type,
           dx: 0,
           dy: 0,
           bullets: []
@@ -1921,13 +1512,9 @@ function showRespawnTimer(timeLeft) {
           enemy.color = "darkblue";
           enemy.speed = 1.75;
           enemy.hitsRemaining = 2;
-          enemy.shootCooldown = 0;
           enemy.shootInterval = setInterval(() => {
-            if (enemies.indexOf(enemy) !== -1) {
-              shootAtPlayer(enemy);
-            } else {
-              clearInterval(enemy.shootInterval);
-            }
+            if (enemies.includes(enemy)) shootAtPlayer(enemy);
+            else clearInterval(enemy.shootInterval);
           }, 800);
         } else if (type === "tank") {
           enemy.size = 60;
@@ -1948,7 +1535,6 @@ function showRespawnTimer(timeLeft) {
         enemies.push(enemy);
       }
     }
-    
     function updateLeaderboard(score) {
       leaderboard.push(score);
       leaderboard.sort((a, b) => b - a);
@@ -1956,19 +1542,6 @@ function showRespawnTimer(timeLeft) {
       localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
       displayLeaderboard();
     }
-    
-    function displayLeaderboard() {
-      const leaderboardList = document.getElementById("leaderboardList");
-      leaderboardList.innerHTML = "";
-      leaderboard.forEach((score, index) => {
-        const li = document.createElement("li");
-        li.textContent = `${index + 1}. ${score}`;
-        leaderboardList.appendChild(li);
-      });
-    }
-    
-    displayLeaderboard();
-    
     function toggleMusic() {
       const bgMusic = document.getElementById("bgMusic");
       const muteButton = document.getElementById("muteButton");
@@ -1980,15 +1553,8 @@ function showRespawnTimer(timeLeft) {
         muteButton.textContent = "Unmute Music";
       }
     }
-    
-    function openGunShop() {
-      document.getElementById("gunShopModal").style.display = "block";
-    }
-    
-    function closeGunShop() {
-      document.getElementById("gunShopModal").style.display = "none";
-    }
-    
+    function openGunShop() { document.getElementById("gunShopModal").style.display = "block"; }
+    function closeGunShop() { document.getElementById("gunShopModal").style.display = "none"; }
     function selectGun(gun) {
       if (gun === "rifle") {
         playerGun = "rifle";
@@ -2027,9 +1593,7 @@ function showRespawnTimer(timeLeft) {
               ownedGuns.push("shotgun");
               localStorage.setItem("ownedGuns", JSON.stringify(ownedGuns));
               alert("Shotgun purchased and equipped!");
-            } else {
-              alert("Not enough coins for Shotgun!");
-            }
+            } else { alert("Not enough coins for Shotgun!"); }
           } else if (gun === "flamethrower") {
             if (coinCount * 50 >= 1000) {
               coinCount -= 20;
@@ -2040,9 +1604,7 @@ function showRespawnTimer(timeLeft) {
               ownedGuns.push("flamethrower");
               localStorage.setItem("ownedGuns", JSON.stringify(ownedGuns));
               alert("Flamethrower purchased and equipped!");
-            } else {
-              alert("Not enough coins for Flamethrower!");
-            }
+            } else { alert("Not enough coins for Flamethrower!"); }
           } else if (gun === "uzi") {
             if (coinCount * 50 >= 2000) {
               coinCount -= 40;
@@ -2053,30 +1615,20 @@ function showRespawnTimer(timeLeft) {
               ownedGuns.push("uzi");
               localStorage.setItem("ownedGuns", JSON.stringify(ownedGuns));
               alert("Uzi purchased and equipped!");
-            } else {
-              alert("Not enough coins for Uzi!");
-            }
+            } else { alert("Not enough coins for Uzi!"); }
           }
         }
       }
       closeGunShop();
     }
-    
-    function openGameModeBox() {
-      document.getElementById("gameModeModal").style.display = "block";
-    }
-    
-    function closeGameMode() {
-      document.getElementById("gameModeModal").style.display = "none";
-    }
-    
+    function openGameModeBox() { document.getElementById("gameModeModal").style.display = "block"; }
+    function closeGameMode() { document.getElementById("gameModeModal").style.display = "none"; }
     function selectGameMode(mode) {
       gameMode = mode;
       enemies = [];
       enemyBullets = [];
       healthBoosts = [];
       coinsOnField = [];
-      
       if (gameMode === "zombies") {
         challengeStartTime = 0;
         lastChallengeSpawnTime = 0;
@@ -2096,15 +1648,10 @@ function showRespawnTimer(timeLeft) {
         document.getElementById("roundMessage").textContent = "PVP Mode: Waiting for opponent...";
         document.getElementById("roundMessage").style.opacity = 1;
       }
-      
-      if (gameStarted) {
-        pauseGame();
-      }
-      
+      if (gameStarted) pauseGame();
       closeGameMode();
       alert("Game mode switched to " + (mode === "zombies" ? "Zombies" : mode === "challenge" ? "Challenge Mode" : "PVP") + ". Ready up to start.");
     }
-    
   </script>
 </body>
 </html>
