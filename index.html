@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -552,9 +551,7 @@
 
     // Create and load the player ship image.
     const playerImage = new Image();
-   playerImage.onload = () => {
-  
-playerImage.src = 'player.png';  // Set the image source
+    playerImage.src = 'player.png';  // Set the image source
     const player = {
       x: canvas.width / 2,
       y: canvas.height / 2,
@@ -768,33 +765,50 @@ playerImage.src = 'player.png';  // Set the image source
 
  
 // Receive the list of current players (including yourself)
-socket.on('currentPlayers', (players) => {
-  // 'players' is an object keyed by socket IDs.
-  // Add every other player to our local state.
-  Object.keys(players).forEach((id) => {
+// Global object for remote players
+let otherPlayers = {};
+
+// When you first connect:
+socket.on('currentPlayers', (playersData) => {
+  Object.keys(playersData).forEach((id) => {
     if (id !== socket.id) {
-      otherPlayers[id] = players[id];
+      // Optionally, add a default size if not provided:
+      if (!playersData[id].size) playersData[id].size = 40;
+      if (!playersData[id].health) playersData[id].health = 100;
+      otherPlayers[id] = playersData[id];
     }
   });
+  // If there are at least 2 players, display the "player found" message.
+  if(Object.keys(playersData).length >= 2) {
+    const roundMessage = document.getElementById("roundMessage");
+    roundMessage.textContent = "Player found, starting PvP mode";
+    roundMessage.style.opacity = 1;
+    setTimeout(() => {
+      roundMessage.style.transition = "opacity 2s";
+      roundMessage.style.opacity = 0;
+    }, 2000);
+  }
 });
 
-// When a new player joins
+// When a new player joins:
 socket.on('newPlayer', (playerData) => {
+  if (playerData.id !== socket.id) {
+    if (!playerData.size) playerData.size = 40;
+    if (!playerData.health) playerData.health = 100;
     otherPlayers[playerData.id] = playerData;
     console.log("New player added:", playerData);
+  }
 });
 
-// When an existing player moves
+// When an existing player moves:
 socket.on('playerMove', (data) => {
-    // Update the position of the other player
-    if (otherPlayers[data.id]) {
-        otherPlayers[data.id].x = data.data.x;
-        otherPlayers[data.id].y = data.data.y;
-    }
+  if (data.id !== socket.id && otherPlayers[data.id]) {
+    otherPlayers[data.id].x = data.data.x;
+    otherPlayers[data.id].y = data.data.y;
+  }
 });
 
-
-// When a player disconnects
+// When a player disconnects:
 socket.on('playerDisconnect', (id) => {
   delete otherPlayers[id];
   console.log("Player disconnected:", id);
@@ -893,19 +907,30 @@ function shootBullet() {
     let otherPlayers = {};
    
 function drawOtherPlayers() {
-    for (let id in otherPlayers) {
-        const otherPlayer = otherPlayers[id];
-    
-        
-        // Check if the player is within canvas bounds
-        if (otherPlayer.x >= 0 && otherPlayer.x <= canvas.width && otherPlayer.y >= 0 && otherPlayer.y <= canvas.height) {
-            ctx.save();
-            ctx.translate(otherPlayer.x, otherPlayer.y);
-            ctx.drawImage(playerImage, -otherPlayer.size / 2, -otherPlayer.size / 2, otherPlayer.size, otherPlayer.size);
-            ctx.restore();
-        }
+  for (let id in otherPlayers) {
+    const otherPlayer = otherPlayers[id];
+
+    // Check if the player is within canvas bounds
+    if (
+      otherPlayer.x >= 0 &&
+      otherPlayer.x <= canvas.width &&
+      otherPlayer.y >= 0 &&
+      otherPlayer.y <= canvas.height
+    ) {
+      ctx.save();
+      ctx.translate(otherPlayer.x, otherPlayer.y);
+      ctx.drawImage(
+        playerImage,
+        -otherPlayer.size / 2,
+        -otherPlayer.size / 2,
+        otherPlayer.size,
+        otherPlayer.size
+      );
+      ctx.restore();
     }
+  }
 }
+
 
     function drawEnemies() {
       for (let enemy of enemies) {
