@@ -890,11 +890,13 @@ function shootBullet() {
     }
     let otherPlayers = {};
    
-  function drawOtherPlayers() {
+function drawOtherPlayers() {
     for (let id in otherPlayers) {
         const otherPlayer = otherPlayers[id];
-        console.log(`Drawing player: ${id} at (${otherPlayer.x}, ${otherPlayer.y}) with size: ${otherPlayer.size}`);
-        if (otherPlayer && otherPlayer.x && otherPlayer.y) {
+    
+        
+        // Check if the player is within canvas bounds
+        if (otherPlayer.x >= 0 && otherPlayer.x <= canvas.width && otherPlayer.y >= 0 && otherPlayer.y <= canvas.height) {
             ctx.save();
             ctx.translate(otherPlayer.x, otherPlayer.y);
             ctx.drawImage(playerImage, -otherPlayer.size / 2, -otherPlayer.size / 2, otherPlayer.size, otherPlayer.size);
