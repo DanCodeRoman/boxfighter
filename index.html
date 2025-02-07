@@ -821,6 +821,11 @@ socket.on('respawn', (playerData) => {
   // Reset other player state as needed
 });
 
+// Handle player disconnection
+socket.on("playerDisconnect", (id) => {
+  delete otherPlayers[id];  // Remove the disconnected player
+});
+
 // Show respawn timer on screen
 
 
