@@ -2,19 +2,16 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const http = require('http').createServer(app);
- cors: {
-    origin: "https://dancoderoman.github.io",  // Ensure this matches your frontend URL
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type"]
-  }
-});
 
 // Enable CORS for Express routes
 app.use(cors({
-  origin: "https://dancoderoman.github.io/boxfighter/",  // Allow only your GitHub Pages domain
+  origin: "https://dancoderoman.github.io",  // Allow only your GitHub Pages domain
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type"]
 }));
+
+// Your remaining server logic here...
+
 
 // Object to track connected players (for example purposes)
 let players = {};  // This is the existing object for managing connected players
