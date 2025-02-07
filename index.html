@@ -761,7 +761,7 @@
         document.getElementById("roundMessage").textContent = "PVP Mode: Waiting for opponent...";
         document.getElementById("roundMessage").style.opacity = 1;
         // Replace the URL below with your server's address (if running locally, use http://localhost:3000)
-       const socket = io("https://boxfighter.onrender.com/");
+       
 
  
 // Receive the list of current players (including yourself)
@@ -778,10 +778,12 @@ socket.on('currentPlayers', (playersData) => {
 
 // When a new player joins
 socket.on('newPlayer', (playerData) => {
-  // Set a default size if not provided
-  playerData.size = 40;
-  otherPlayers[playerData.id] = playerData;
-  console.log("New player added:", playerData);
+  // Only add other players (not yourself)
+  if (playerData.id !== socket.id) {
+    playerData.size = 40;
+    otherPlayers[playerData.id] = playerData;
+    console.log("New player added:", playerData);
+  }
 });
 
 // When an existing player moves
@@ -804,14 +806,12 @@ socket.on("respawn", (playerData) => {
   otherPlayers[playerData.id] = playerData; // Update respawned player
 });
 
-        socket.on("playerShoot", (data) => {
-  // Handle bullets shot by other players
-  const otherPlayer = otherPlayers[data.id];
-  if (otherPlayer) {
-    // Draw other player’s bullets (implement this similar to your own shooting)
-    drawBullet(data.data);  // You need to handle bullet drawing for other players as well
+   socket.on("playerShoot", (data) => {
+  if (data && data.data) {
+    enemyBullets.push(data.data);
   }
 });
+
 
 // Update the respawn timer
 socket.on('respawn', (playerData) => {
@@ -1322,26 +1322,46 @@ function drawOtherPlayers() {
           }
         }
       }
-      for (let enemy of enemies) {
-        if (enemy.type === "boss") {
-          for (let i = enemy.bullets.length - 1; i >= 0; i--) {
-            const bullet = enemy.bullets[i];
-            if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < player.size / 2 + bullet.size) {
-              if (isInShieldZone(bullet.x, bullet.y) && shieldActive) {
-                shieldHit();
-                enemy.bullets.splice(i, 1);
-              } else {
-                health -= health * 0.25;
-                enemy.bullets.splice(i, 1);
-                if (health <= 0) {
-                  endGame();
-                }
-              }
-            }
+     // If in PVP mode, check if your bullets hit other players
+if (gameMode === "pvp") {
+  for (let i = player.bullets.length - 1; i >= 0; i--) {
+    const bullet = player.bullets[i];
+    // Loop over each other player in the otherPlayers object
+    for (let id in otherPlayers) {
+      const other = otherPlayers[id];
+      // Simple circle collision detection
+      if (Math.hypot(bullet.x - other.x, bullet.y - other.y) < other.size / 2 + (bullet.size || 5)) {
+        // Inform the server that you hit this player (damage value can be adjusted)
+        socket.emit('playerHit', { targetId: other.id, damage: 10 });
+        // Remove the bullet after a hit
+        player.bullets.splice(i, 1);
+        break; // Exit the inner loop once the bullet is consumed
+      }
+    }
+  }
+}
+
+// Check for bullet collisions with NPC enemies
+for (let enemy of enemies) {
+  if (enemy.type === "boss") {
+    for (let i = enemy.bullets.length - 1; i >= 0; i--) {
+      const bullet = enemy.bullets[i];
+      if (Math.hypot(bullet.x - player.x, bullet.y - player.y) < player.size / 2 + bullet.size) {
+        if (isInShieldZone(bullet.x, bullet.y) && shieldActive) {
+          shieldHit();
+          enemy.bullets.splice(i, 1);
+        } else {
+          health -= health * 0.25;
+          enemy.bullets.splice(i, 1);
+          if (health <= 0) {
+            endGame();
           }
         }
       }
     }
+  }
+}
+
     
     function checkHealthBoostCollisions() {
       for (let i = healthBoosts.length - 1; i >= 0; i--) {
