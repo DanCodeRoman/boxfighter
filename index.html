@@ -494,6 +494,7 @@
     let gameLoopId;
     let gameStarted = false;
     let boss = null; // used in rounds < 10
+    
 
     // Global array for shooter enemy bullets
     let enemyBullets = [];
@@ -967,6 +968,8 @@ function drawOtherPlayers() {
     }
     
     function updateBullets() {
+      const { x, y, dx, dy } = bullet;
+
       for (let i = player.bullets.length - 1; i >= 0; i--) {
         const bullet = player.bullets[i];
         if (bullet.lifetime && performance.now() - bullet.creationTime >= bullet.lifetime) {
